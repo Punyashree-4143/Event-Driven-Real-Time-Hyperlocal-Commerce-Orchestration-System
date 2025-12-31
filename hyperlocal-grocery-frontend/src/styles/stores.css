@@ -1,0 +1,101 @@
+/* NAVBAR - FULL WIDTH */
+.navbar {
+  width: 100vw;
+  background: #22c55e;
+  color: white;
+  padding: 18px 40px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* HERO - FULL WIDTH */
+.hero {
+  width: 100vw;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+
+.hero h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 18px;
+  opacity: 0.95;
+}
+
+/* Store section wrapper */
+.store-section {
+  background: #f8fafc;
+  padding: 60px 20px;
+}
+
+/* Center heading */
+.store-section h2 {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 28px;
+  color: #1f2937;
+}
+
+/* THIS IS THE KEY PART */
+.store-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;               /* TRUE CENTERING */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  justify-content: center;
+}
+
+/* Store Card */
+.store-card {
+  background: white;
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.store-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+}
+
+.store-card h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.address {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+.radius {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #16a34a;
+}
+.store-section {
+  width: 100%;
+  background: #f8fafc;
+  padding: 60px 20px;
+}
+
+.store-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;        /* centers content */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
