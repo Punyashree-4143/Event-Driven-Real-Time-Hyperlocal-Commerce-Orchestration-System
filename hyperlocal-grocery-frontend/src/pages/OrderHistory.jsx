@@ -14,7 +14,7 @@ function OrderHistory() {
 
   return (
     <div className="order-history-page">
-      {/* 🔙 BACK BUTTON */}
+      {/* BACK */}
       <button
         className="back-btn"
         onClick={() => navigate("/stores")}
@@ -28,24 +28,27 @@ function OrderHistory() {
         <p>No orders placed yet.</p>
       ) : (
         orders.map((order) => (
-          <div key={order.orderId} className="order-card">
+          <div key={order._id} className="order-card">
             <p>
-              <strong>Order ID:</strong> {order.orderId}
+              <strong>Order ID:</strong> {order._id}
             </p>
+
             <p>
               <strong>Date:</strong>{" "}
               {new Date(order.createdAt).toLocaleString()}
             </p>
+
             <p>
-              <strong>Total:</strong> ₹{order.total}
+              <strong>Total:</strong> ₹{order.totalAmount}
             </p>
+
             <p>
               <strong>Status:</strong> {order.status}
             </p>
 
             <button
               onClick={() =>
-                navigate(`/tracking/${order.orderId}`)
+                navigate(`/tracking/${order._id}`)
               }
             >
               Track Order

@@ -1,44 +1,26 @@
-const mongoose = require("mongoose");
+const express = require("express");
+const router = express.Router();
 
-const orderSchema = new mongoose.Schema({
-  storeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Store",
-    required: true
-  },
+const {
+  placeOrder,
+  getVendorOrders,
+  updateOrderStatus,
+  getOrderById,
+} = require("../controllers/orderController");
 
-  items: [
-    {
-      _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: true
-      },
-      name: String,
-      price: Number,
-      qty: Number
-    }
-  ],
+const protect = require("../middleware/protect");     // customer
+const shopOnly = require("../middleware/shopOnly");   // vendor
 
-  address: {
-    type: String,
-    required: true
-  },
+// ==============================
+// VENDOR ROUTES (MUST COME FIRST)
+// ==============================
+router.get("/vendor", shopOnly, getVendorOrders);
+router.put("/:orderId/status", shopOnly, updateOrderStatus);
 
-  total: {
-    type: Number,
-    required: true
-  },
+// ==============================
+// CUSTOMER ROUTES
+// ==============================
+router.post("/", protect, placeOrder);
+router.get("/:orderId", protect, getOrderById);
 
-  paymentMethod: {
-    type: String,
-    required: true
-  },
-
-  status: {
-    type: String,
-    default: "confirmed"
-  }
-}, { timestamps: true });
-
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = router;

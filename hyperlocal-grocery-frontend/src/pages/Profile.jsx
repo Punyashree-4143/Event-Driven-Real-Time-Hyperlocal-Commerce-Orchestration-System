@@ -8,12 +8,22 @@ function Profile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedOrders =
+    const rawOrders =
       JSON.parse(localStorage.getItem("orders")) || [];
+
+    // ✅ NORMALIZE OLD + NEW ORDERS
+    const normalizedOrders = rawOrders.map((order) => ({
+      _id: order._id || order.orderId || "N/A",
+      totalAmount:
+        order.totalAmount || order.total || 0,
+      status: order.status || "Placed",
+      createdAt: order.createdAt || Date.now(),
+    }));
+
+    setOrders(normalizedOrders.reverse());
+
     const savedAddress =
       localStorage.getItem("deliveryAddress") || "";
-
-    setOrders(savedOrders.reverse());
     setAddress(savedAddress);
   }, []);
 
@@ -30,7 +40,7 @@ function Profile() {
         </button>
       </div>
 
-      {/* ORDER HISTORY */}
+      {/* ORDERS */}
       <div className="profile-card">
         <h3>My Orders</h3>
 
@@ -38,19 +48,22 @@ function Profile() {
           <p>No orders placed yet.</p>
         ) : (
           orders.map((order) => (
-            <div
-              key={order.orderId}
-              className="order-row"
-            >
+            <div key={order._id} className="order-row">
               <div>
-                <strong>Order ID:</strong> {order.orderId}
+                <strong>Order ID:</strong> {order._id}
               </div>
-              <div>₹{order.total}</div>
-              <div>{order.status}</div>
+
+              <div>
+                <strong>Total:</strong> ₹{order.totalAmount}
+              </div>
+
+              <div>
+                <strong>Status:</strong> {order.status}
+              </div>
 
               <button
                 onClick={() =>
-                  navigate(`/tracking/${order.orderId}`)
+                  navigate(`/tracking/${order._id}`)
                 }
               >
                 Track

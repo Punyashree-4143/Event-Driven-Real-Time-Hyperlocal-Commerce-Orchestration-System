@@ -33,17 +33,34 @@ function Login() {
         return;
       }
 
-      login(data.user);          // save user in context
+      // 🚫 BLOCK VENDORS FROM CUSTOMER APP
+      if (data.role !== "customer") {
+        alert("Please login using a CUSTOMER account");
+        return;
+      }
+
+      // ✅ STORE CUSTOMER TOKEN
+      localStorage.setItem("userToken", data.token);
+
+      // ✅ STORE CUSTOMER USER IN CONTEXT
+      login({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+      });
+
       alert("Login successful");
-      navigate("/stores");       // redirect to stores
+      navigate("/stores");
     } catch (err) {
+      console.error("LOGIN ERROR:", err);
       alert("Something went wrong");
     }
   };
 
   return (
     <div className="auth-container">
-      <h2>Login</h2>
+      <h2>Customer Login</h2>
 
       <form onSubmit={handleSubmit}>
         <input

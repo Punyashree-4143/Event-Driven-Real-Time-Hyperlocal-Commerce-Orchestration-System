@@ -5,48 +5,79 @@ import "../styles/tracking.css";
 function Tracking() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState("confirmed");
+
+  const [order, setOrder] = useState(null);
+  const userToken = localStorage.getItem("userToken");
 
   useEffect(() => {
-    const steps = [
-      "confirmed",
-      "preparing",
-      "out_for_delivery",
-      "delivered"
-    ];
-    let index = 0;
+    const fetchOrder = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5001/api/orders/${orderId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+            },
+          }
+        );
 
-    const interval = setInterval(() => {
-      index++;
-      if (index < steps.length) {
-        setStatus(steps[index]);
-      } else {
-        clearInterval(interval);
+        const data = await res.json();
 
-        // ✅ Redirect after delivery
-        setTimeout(() => {
-          navigate("/orders");
-        }, 2000);
+        if (res.ok) {
+          setOrder(data.order);
+
+          // 🔥 REDIRECT AFTER DELIVERY
+          if (data.order.status === "Delivered") {
+            setTimeout(() => {
+              navigate("/orders"); // order history page
+            }, 2000); // 2 sec delay for UX
+          }
+        }
+      } catch (err) {
+        console.error("TRACKING ERROR:", err);
       }
-    }, 3000);
+    };
+
+    fetchOrder();
+    const interval = setInterval(fetchOrder, 5000); // poll every 5s
 
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [orderId, userToken, navigate]);
 
-  const labelMap = {
-    confirmed: "✅ Order Confirmed",
-    preparing: "🍳 Preparing your order",
-    out_for_delivery: "🚚 Out for delivery",
-    delivered: "📦 Delivered"
-  };
+  if (!order) return <p>Loading order...</p>;
 
   return (
     <div className="tracking-page">
       <h2>Order Tracking</h2>
-      <p>Order ID: {orderId}</p>
-      <h3>{labelMap[status]}</h3>
-      {status === "delivered" && (
-        <p>Redirecting to order history...</p>
+
+      <p>
+        <strong>Order ID:</strong> {order._id}
+      </p>
+
+      <ul className="tracking-steps">
+        <li className={["Placed","Packed","Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
+          📦 Order Placed
+        </li>
+
+        <li className={["Packed","Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
+          🧺 Packed
+        </li>
+
+        <li className={["Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
+          🚚 Out for Delivery
+        </li>
+
+        <li className={order.status === "Delivered" ? "active" : ""}>
+          ✅ Delivered
+        </li>
+      </ul>
+
+      <h3>Status: {order.status}</h3>
+
+      {order.status === "Delivered" && (
+        <p className="redirect-msg">
+          🎉 Order delivered! Redirecting to order history...
+        </p>
       )}
     </div>
   );
