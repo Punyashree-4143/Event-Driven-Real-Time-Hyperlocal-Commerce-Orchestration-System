@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCart } from "../utils/cart";
-import "../styles/checkout.css";
 
 function Checkout() {
   const navigate = useNavigate();
@@ -109,35 +108,25 @@ function Checkout() {
         return;
       }
 
-      // =====================
-      // SAVE CURRENT ORDER
-      // =====================
+      // Save current order
       localStorage.setItem(
         "currentOrder",
         JSON.stringify(data.order)
       );
 
-      // =====================
-      // SAVE ORDER HISTORY ✅
-      // =====================
+      // Save order history (temporary – backend later)
       const existingOrders =
         JSON.parse(localStorage.getItem("orders")) || [];
-
       existingOrders.push(data.order);
-
       localStorage.setItem(
         "orders",
         JSON.stringify(existingOrders)
       );
 
-      // =====================
-      // CLEAR CART
-      // =====================
+      // Clear cart
       localStorage.removeItem("cart");
 
-      // =====================
-      // REDIRECT TO TRACKING
-      // =====================
+      // Redirect
       navigate(`/tracking/${data.order._id}`);
     } catch (err) {
       console.error("ORDER ERROR:", err);
@@ -146,71 +135,92 @@ function Checkout() {
   };
 
   return (
-    <>
-      <header className="page-header">
-        <h2>Checkout</h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* 🔝 Header */}
+      <header className="bg-white shadow p-4 sticky top-0 z-10">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Checkout
+        </h2>
       </header>
 
-      <section className="checkout-section">
-        <div className="checkout-box">
-          {/* ADDRESS */}
-          <h3>Delivery Address</h3>
+      {/* 🧾 Checkout Box */}
+      <section className="p-4 flex justify-center">
+        <div className="w-full max-w-xl bg-white rounded-xl shadow p-6 space-y-6">
+          {/* 📍 Address */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2">
+              Delivery Address
+            </h3>
 
-          {isEditing ? (
-            <>
-              <textarea
-                placeholder="Enter delivery address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-              <button
-                type="button"
-                className="save-address-btn"
-                onClick={saveAddress}
-              >
-                Save Address
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="saved-address">{address}</p>
-              <button
-                type="button"
-                className="edit-btn"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit / Change Address
-              </button>
-            </>
-          )}
-
-          <hr />
-
-          {/* PAYMENT */}
-          <h3>Payment Method</h3>
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-          >
-            <option value="COD">Cash on Delivery</option>
-            <option value="UPI">UPI</option>
-            <option value="CARD">Card</option>
-          </select>
+            {isEditing ? (
+              <>
+                <textarea
+                  placeholder="Enter delivery address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                  rows={3}
+                />
+                <button
+                  onClick={saveAddress}
+                  className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                >
+                  Save Address
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="bg-gray-100 p-3 rounded-lg">
+                  {address}
+                </p>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="mt-2 text-green-600 hover:underline text-sm"
+                >
+                  Edit / Change Address
+                </button>
+              </>
+            )}
+          </div>
 
           <hr />
 
-          <h3>Total Amount: ₹{totalAmount}</h3>
+          {/* 💳 Payment */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2">
+              Payment Method
+            </h3>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-green-500 outline-none"
+            >
+              <option value="COD">Cash on Delivery</option>
+              <option value="UPI">UPI</option>
+              <option value="CARD">Card</option>
+            </select>
+          </div>
 
+          <hr />
+
+          {/* 💰 Total */}
+          <div className="flex justify-between items-center text-lg font-semibold">
+            <span>Total Amount</span>
+            <span className="text-green-600">
+              ₹{totalAmount}
+            </span>
+          </div>
+
+          {/* ✅ Place Order */}
           <button
-            type="button"
-            className="place-order-btn"
             onClick={placeOrder}
+            className="w-full bg-green-600 text-white py-3 rounded-lg text-lg font-medium hover:bg-green-700 transition"
           >
             Place Order
           </button>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 

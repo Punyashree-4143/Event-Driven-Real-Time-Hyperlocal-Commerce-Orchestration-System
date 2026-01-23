@@ -41,7 +41,6 @@ exports.placeOrder = async (req, res) => {
       await product.save();
     }
 
-    // Normalize items
     const normalizedItems = items.map((item) => ({
       productId: item._id,
       name: item.name,
@@ -50,7 +49,7 @@ exports.placeOrder = async (req, res) => {
     }));
 
     const order = await Order.create({
-      userId: req.user._id, // customer
+      userId: req.user._id,
       storeId,
       items: normalizedItems,
       address,
@@ -69,7 +68,25 @@ exports.placeOrder = async (req, res) => {
 };
 
 // ==============================
-// CUSTOMER – GET ORDER BY ID (TRACKING)
+// CUSTOMER – GET MY ORDERS
+// ==============================
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      userId: req.user._id,
+    }).sort({ createdAt: -1 });
+
+    res.json({ orders });
+  } catch (err) {
+    console.error("GET MY ORDERS ERROR:", err);
+    res.status(500).json({
+      message: "Failed to fetch order history",
+    });
+  }
+};
+
+// ==============================
+// CUSTOMER – GET ORDER BY ID
 // ==============================
 exports.getOrderById = async (req, res) => {
   try {
@@ -83,10 +100,9 @@ exports.getOrderById = async (req, res) => {
       });
     }
 
-    // 🔒 Customer can access ONLY their order
     if (
-      order.userId &&
-      order.userId.toString() !== req.user._id.toString()
+      order.userId.toString() !==
+      req.user._id.toString()
     ) {
       return res.status(403).json({
         message: "Access denied",
@@ -100,12 +116,60 @@ exports.getOrderById = async (req, res) => {
 };
 
 // ==============================
+// CUSTOMER – CANCEL ORDER
+// ==============================
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (
+      order.userId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    // ❌ Only Placed orders can be cancelled
+    if (order.status !== "Placed") {
+      return res.status(400).json({
+        message:
+          "Order cannot be cancelled after packing",
+      });
+    }
+
+    order.status = "Cancelled";
+    await order.save();
+
+    res.json({
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("CANCEL ORDER ERROR:", err);
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+// ==============================
 // VENDOR – GET STORE ORDERS
 // ==============================
 exports.getVendorOrders = async (req, res) => {
   try {
-    // Find vendor's store
-    const store = await Store.findOne({ owner: req.user._id });
+    const store = await Store.findOne({
+      owner: req.user._id,
+    });
 
     if (!store) {
       return res.status(404).json({
@@ -125,14 +189,17 @@ exports.getVendorOrders = async (req, res) => {
 };
 
 // ==============================
-// VENDOR – UPDATE ORDER STATUS (LOCKED FLOW)
+// VENDOR – UPDATE ORDER STATUS
 // ==============================
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    const store = await Store.findOne({ owner: req.user._id });
+    const store = await Store.findOne({
+      owner: req.user._id,
+    });
+
     if (!store) {
       return res.status(404).json({
         message: "Store not found",
@@ -150,7 +217,6 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    // 🔒 VALID STATUS FLOW
     const validTransitions = {
       Placed: ["Packed"],
       Packed: ["Out for Delivery"],
@@ -173,5 +239,58 @@ exports.updateOrderStatus = async (req, res) => {
   } catch (err) {
     console.error("UPDATE STATUS ERROR:", err);
     res.status(500).json({ message: err.message });
+  }
+};
+// ==============================
+// CUSTOMER – CHECK REORDER AVAILABILITY
+// ==============================
+exports.checkReorderAvailability = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (
+      order.userId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    const unavailableItems = [];
+
+    for (const item of order.items) {
+      const product = await Product.findById(
+        item.productId
+      );
+
+      if (
+        !product ||
+        product.stock < item.qty
+      ) {
+        unavailableItems.push(item.name);
+      }
+    }
+
+    if (unavailableItems.length > 0) {
+      return res.json({
+        canReorder: false,
+        unavailableItems,
+      });
+    }
+
+    res.json({ canReorder: true });
+  } catch (err) {
+    console.error("REORDER CHECK ERROR:", err);
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };

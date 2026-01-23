@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "../styles/tracking.css";
 
 function Tracking() {
   const { orderId } = useParams();
@@ -29,8 +28,8 @@ function Tracking() {
           // 🔥 REDIRECT AFTER DELIVERY
           if (data.order.status === "Delivered") {
             setTimeout(() => {
-              navigate("/orders"); // order history page
-            }, 2000); // 2 sec delay for UX
+              navigate("/orders");
+            }, 2000);
           }
         }
       } catch (err) {
@@ -44,41 +43,93 @@ function Tracking() {
     return () => clearInterval(interval);
   }, [orderId, userToken, navigate]);
 
-  if (!order) return <p>Loading order...</p>;
+  if (!order) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        Loading order...
+      </div>
+    );
+  }
+
+  const steps = [
+    "Placed",
+    "Packed",
+    "Out for Delivery",
+    "Delivered",
+  ];
+
+  const isActive = (step) =>
+    steps.indexOf(step) <= steps.indexOf(order.status);
 
   return (
-    <div className="tracking-page">
-      <h2>Order Tracking</h2>
+    <div className="min-h-screen bg-gray-50 p-4 flex justify-center">
+      <div className="w-full max-w-xl bg-white rounded-xl shadow p-6">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          Order Tracking
+        </h2>
 
-      <p>
-        <strong>Order ID:</strong> {order._id}
-      </p>
-
-      <ul className="tracking-steps">
-        <li className={["Placed","Packed","Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
-          📦 Order Placed
-        </li>
-
-        <li className={["Packed","Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
-          🧺 Packed
-        </li>
-
-        <li className={["Out for Delivery","Delivered"].includes(order.status) ? "active" : ""}>
-          🚚 Out for Delivery
-        </li>
-
-        <li className={order.status === "Delivered" ? "active" : ""}>
-          ✅ Delivered
-        </li>
-      </ul>
-
-      <h3>Status: {order.status}</h3>
-
-      {order.status === "Delivered" && (
-        <p className="redirect-msg">
-          🎉 Order delivered! Redirecting to order history...
+        <p className="text-sm text-gray-600 mb-6">
+          <strong>Order ID:</strong> {order._id}
         </p>
-      )}
+
+        {/* 🚦 Tracking Steps */}
+        <ul className="space-y-4">
+          <li
+            className={`flex items-center gap-3 ${
+              isActive("Placed")
+                ? "text-green-600 font-medium"
+                : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">📦</span> Order Placed
+          </li>
+
+          <li
+            className={`flex items-center gap-3 ${
+              isActive("Packed")
+                ? "text-green-600 font-medium"
+                : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">🧺</span> Packed
+          </li>
+
+          <li
+            className={`flex items-center gap-3 ${
+              isActive("Out for Delivery")
+                ? "text-green-600 font-medium"
+                : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">🚚</span> Out for Delivery
+          </li>
+
+          <li
+            className={`flex items-center gap-3 ${
+              order.status === "Delivered"
+                ? "text-green-600 font-medium"
+                : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">✅</span> Delivered
+          </li>
+        </ul>
+
+        {/* 📌 Status */}
+        <div className="mt-6 text-lg font-semibold">
+          Status:{" "}
+          <span className="text-green-600">
+            {order.status}
+          </span>
+        </div>
+
+        {/* 🎉 Redirect Message */}
+        {order.status === "Delivered" && (
+          <p className="mt-4 text-green-600 text-sm">
+            🎉 Order delivered! Redirecting to order history...
+          </p>
+        )}
+      </div>
     </div>
   );
 }

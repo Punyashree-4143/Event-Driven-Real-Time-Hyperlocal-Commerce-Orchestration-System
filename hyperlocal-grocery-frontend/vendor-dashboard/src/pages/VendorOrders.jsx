@@ -93,11 +93,14 @@ function VendorOrders() {
       Packed: "bg-blue-100 text-blue-700",
       "Out for Delivery": "bg-purple-100 text-purple-700",
       Delivered: "bg-green-100 text-green-700",
+      Cancelled: "bg-red-100 text-red-700",
     };
 
     return (
       <span
-        className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status]}`}
+        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+          styles[status] || "bg-gray-100 text-gray-600"
+        }`}
       >
         {status}
       </span>
@@ -108,6 +111,15 @@ function VendorOrders() {
   // ACTION BUTTON
   // =====================
   const getNextAction = (order) => {
+    // ❌ Cancelled orders → NO ACTIONS
+    if (order.status === "Cancelled") {
+      return (
+        <p className="text-red-600 font-semibold text-sm">
+          ❌ Cancelled by customer
+        </p>
+      );
+    }
+
     const disabled = updatingId === order._id;
 
     if (order.status === "Placed") {
@@ -126,7 +138,9 @@ function VendorOrders() {
       return (
         <button
           disabled={disabled}
-          onClick={() => updateStatus(order._id, "Out for Delivery")}
+          onClick={() =>
+            updateStatus(order._id, "Out for Delivery")
+          }
           className="btn-primary"
         >
           {disabled ? "Updating..." : "Out for Delivery"}
@@ -138,7 +152,9 @@ function VendorOrders() {
       return (
         <button
           disabled={disabled}
-          onClick={() => updateStatus(order._id, "Delivered")}
+          onClick={() =>
+            updateStatus(order._id, "Delivered")
+          }
           className="btn-success"
         >
           {disabled ? "Updating..." : "Mark as Delivered"}
@@ -187,7 +203,11 @@ function VendorOrders() {
             {orders.map((order) => (
               <div
                 key={order._id}
-                className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition"
+                className={`rounded-xl shadow-md p-5 transition ${
+                  order.status === "Cancelled"
+                    ? "bg-red-50"
+                    : "bg-white hover:shadow-lg"
+                }`}
               >
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs text-gray-500">
@@ -198,7 +218,8 @@ function VendorOrders() {
 
                 <div className="text-sm text-gray-700 space-y-1">
                   <p>
-                    <strong>Address:</strong> {order.address}
+                    <strong>Address:</strong>{" "}
+                    {order.address}
                   </p>
                   <p className="text-lg font-bold text-gray-900 mt-2">
                     ₹{order.totalAmount}

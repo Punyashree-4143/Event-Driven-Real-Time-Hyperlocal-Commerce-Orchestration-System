@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const categories = [
+  "All",
+  "Fruits",
+  "Vegetables",
+  "Stationery",
+  "Health & Hygiene",
+  "Grocery",
+  "Snacks",
+];
+
 const Stores = () => {
   const [stores, setStores] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -10,7 +22,7 @@ const Stores = () => {
 
     if (cached) {
       const { lat, lng } = JSON.parse(cached);
-      fetchStores(lat, lng);
+      fetchStores(lat, lng, selectedCategory);
     } else {
       navigator.geolocation.getCurrentPosition((pos) => {
         const lat = pos.coords.latitude;
@@ -21,61 +33,93 @@ const Stores = () => {
           JSON.stringify({ lat, lng })
         );
 
-        fetchStores(lat, lng);
+        fetchStores(lat, lng, selectedCategory);
       });
     }
-  }, []);
+  }, [selectedCategory]);
 
-  const fetchStores = async (lat, lng) => {
-    const res = await fetch(
-      `http://localhost:5001/api/stores/nearby?lat=${lat}&lng=${lng}`
-    );
+  const fetchStores = async (lat, lng, category) => {
+    let url = `http://localhost:5001/api/stores/nearby?lat=${lat}&lng=${lng}`;
+
+    if (category && category !== "All") {
+      url += `&category=${encodeURIComponent(category)}`;
+    }
+
+    const res = await fetch(url);
     const data = await res.json();
     setStores(data.stores || []);
   };
 
+  const filteredStores = stores.filter((store) =>
+    store.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div style={pageStyle}>
-      <h2>Nearby Stores</h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* 🔍 Search */}
+      <div className="sticky top-0 z-10 bg-white p-4 shadow">
+        <input
+          type="text"
+          placeholder="Search stores..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-3 rounded-full border focus:ring-2 focus:ring-green-500 outline-none"
+        />
+      </div>
 
-      {stores.map((store) => (
-        <div
-          key={store._id}
-          style={{
-            ...cardStyle,
-            opacity: store.canDeliver ? 1 : 0.5
-          }}
-        >
-          <h3>{store.name}</h3>
-          <p>{store.address}</p>
-          <p>Distance: {(store.distance / 1000).toFixed(2)} km</p>
+      {/* 🏷️ Category Filter */}
+      <div className="flex gap-3 px-4 py-3 overflow-x-auto bg-white">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-4 py-2 rounded-full whitespace-nowrap border text-sm ${
+              selectedCategory === cat
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-700"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
-          {store.canDeliver ? (
-            <button
-              onClick={() => navigate(`/store/${store._id}`)}
+      {/* 🏪 Stores */}
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredStores.length === 0 ? (
+          <p className="text-gray-500">No stores found</p>
+        ) : (
+          filteredStores.map((store) => (
+            <div
+              key={store._id}
+              className={`bg-white rounded-xl shadow p-4 ${
+                store.canDeliver ? "" : "opacity-50"
+              }`}
             >
-              View Products
-            </button>
-          ) : (
-            <p style={{ color: "red" }}>Out of delivery range</p>
-          )}
-        </div>
-      ))}
+              <h3 className="font-semibold text-lg">{store.name}</h3>
+              <p className="text-sm text-gray-500">{store.address}</p>
+              <p className="text-sm mt-1">
+                Distance: {(store.distance / 1000).toFixed(2)} km
+              </p>
+
+              {store.canDeliver ? (
+                <button
+                  onClick={() => navigate(`/store/${store._id}`)}
+                  className="mt-3 w-full bg-green-600 text-white py-2 rounded-lg"
+                >
+                  View Products
+                </button>
+              ) : (
+                <p className="mt-3 text-red-500 text-sm">
+                  Out of delivery range
+                </p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
-};
-
-const pageStyle = {
-  padding: "40px",
-  minHeight: "100vh"
-};
-
-const cardStyle = {
-  background: "#fff",
-  padding: "16px",
-  marginBottom: "15px",
-  borderRadius: "8px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
 };
 
 export default Stores;
