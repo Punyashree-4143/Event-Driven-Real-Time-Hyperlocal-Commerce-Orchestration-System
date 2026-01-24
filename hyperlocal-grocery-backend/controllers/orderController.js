@@ -2,9 +2,9 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const Store = require("../models/Store");
 
-// ==============================
-// CUSTOMER – PLACE ORDER
-// ==============================
+/* ======================================================
+   CUSTOMER – PLACE ORDER (WITH REAL-TIME INVENTORY)
+   ====================================================== */
 exports.placeOrder = async (req, res) => {
   try {
     const {
@@ -21,14 +21,16 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
-    // 🔥 Reduce stock
+    const io = req.app.get("io");
+
+    // 🔥 Reduce stock + emit socket updates
     for (const item of items) {
       const product = await Product.findById(item._id);
 
       if (!product) {
-        return res
-          .status(404)
-          .json({ message: "Product not found" });
+        return res.status(404).json({
+          message: "Product not found",
+        });
       }
 
       if (product.stock < item.qty) {
@@ -39,6 +41,12 @@ exports.placeOrder = async (req, res) => {
 
       product.stock -= item.qty;
       await product.save();
+
+      // 🔴 REAL-TIME INVENTORY UPDATE
+      io.to(storeId.toString()).emit("inventory:update", {
+        productId: product._id,
+        newStock: product.stock,
+      });
     }
 
     const normalizedItems = items.map((item) => ({
@@ -67,9 +75,9 @@ exports.placeOrder = async (req, res) => {
   }
 };
 
-// ==============================
-// CUSTOMER – GET MY ORDERS
-// ==============================
+/* ======================================================
+   CUSTOMER – GET MY ORDERS
+   ====================================================== */
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({
@@ -85,9 +93,9 @@ exports.getMyOrders = async (req, res) => {
   }
 };
 
-// ==============================
-// CUSTOMER – GET ORDER BY ID
-// ==============================
+/* ======================================================
+   CUSTOMER – GET ORDER BY ID (TRACKING)
+   ====================================================== */
 exports.getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -111,13 +119,15 @@ exports.getOrderById = async (req, res) => {
 
     res.json({ order });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
-// ==============================
-// CUSTOMER – CANCEL ORDER
-// ==============================
+/* ======================================================
+   CUSTOMER – CANCEL ORDER
+   ====================================================== */
 exports.cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -162,9 +172,61 @@ exports.cancelOrder = async (req, res) => {
   }
 };
 
-// ==============================
-// VENDOR – GET STORE ORDERS
-// ==============================
+/* ======================================================
+   CUSTOMER – CHECK REORDER AVAILABILITY
+   ====================================================== */
+exports.checkReorderAvailability = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (
+      order.userId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    const unavailableItems = [];
+
+    for (const item of order.items) {
+      const product = await Product.findById(
+        item.productId
+      );
+
+      if (!product || product.stock < item.qty) {
+        unavailableItems.push(item.name);
+      }
+    }
+
+    if (unavailableItems.length > 0) {
+      return res.json({
+        canReorder: false,
+        unavailableItems,
+      });
+    }
+
+    res.json({ canReorder: true });
+  } catch (err) {
+    console.error("REORDER CHECK ERROR:", err);
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+/* ======================================================
+   VENDOR – GET STORE ORDERS
+   ====================================================== */
 exports.getVendorOrders = async (req, res) => {
   try {
     const store = await Store.findOne({
@@ -184,13 +246,15 @@ exports.getVendorOrders = async (req, res) => {
     res.json({ orders });
   } catch (err) {
     console.error("VENDOR ORDERS ERROR:", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
-// ==============================
-// VENDOR – UPDATE ORDER STATUS
-// ==============================
+/* ======================================================
+   VENDOR – UPDATE ORDER STATUS (LOCKED FLOW)
+   ====================================================== */
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -235,60 +299,12 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     await order.save();
 
-    res.json({ message: "Status updated", order });
+    res.json({
+      message: "Status updated",
+      order,
+    });
   } catch (err) {
     console.error("UPDATE STATUS ERROR:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-// ==============================
-// CUSTOMER – CHECK REORDER AVAILABILITY
-// ==============================
-exports.checkReorderAvailability = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({
-        message: "Order not found",
-      });
-    }
-
-    if (
-      order.userId.toString() !==
-      req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        message: "Access denied",
-      });
-    }
-
-    const unavailableItems = [];
-
-    for (const item of order.items) {
-      const product = await Product.findById(
-        item.productId
-      );
-
-      if (
-        !product ||
-        product.stock < item.qty
-      ) {
-        unavailableItems.push(item.name);
-      }
-    }
-
-    if (unavailableItems.length > 0) {
-      return res.json({
-        canReorder: false,
-        unavailableItems,
-      });
-    }
-
-    res.json({ canReorder: true });
-  } catch (err) {
-    console.error("REORDER CHECK ERROR:", err);
     res.status(500).json({
       message: err.message,
     });

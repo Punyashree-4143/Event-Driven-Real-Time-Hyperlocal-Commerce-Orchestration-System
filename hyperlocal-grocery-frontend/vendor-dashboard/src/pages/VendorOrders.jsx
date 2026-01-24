@@ -1,26 +1,35 @@
 import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { io } from "socket.io-client";
+
+// 🔌 Socket (do NOT auto connect)
+const socket = io("http://localhost:5001", {
+  autoConnect: false,
+});
 
 function VendorOrders() {
+  const navigate = useNavigate();
   const { auth } = useContext(AuthContext);
-  const vendorToken = auth?.token;
+  const token = auth?.token;
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
-  const navigate = useNavigate();
+  // =====================
+  // AUTH GUARD (VENDOR)
+  // =====================
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+    }
+  }, [token, navigate]);
 
   // =====================
   // FETCH VENDOR ORDERS
   // =====================
   const fetchOrders = async () => {
-    if (!vendorToken) {
-      navigate("/login");
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -28,7 +37,7 @@ function VendorOrders() {
         "http://localhost:5001/api/orders/vendor",
         {
           headers: {
-            Authorization: `Bearer ${vendorToken}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -41,15 +50,36 @@ function VendorOrders() {
 
       setOrders(data.orders || []);
     } catch (err) {
-      console.error("Order fetch error:", err.message);
+      console.error("❌ Vendor order fetch error:", err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // =====================
+  // SOCKET + INITIAL LOAD
+  // =====================
   useEffect(() => {
+    if (!token) return;
+
     fetchOrders();
-  }, [vendorToken]);
+
+    socket.auth = { token };
+    socket.connect();
+
+    socket.on("order:update", (updatedOrder) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o._id === updatedOrder._id ? updatedOrder : o
+        )
+      );
+    });
+
+    return () => {
+      socket.off("order:update");
+      socket.disconnect();
+    };
+  }, [token]);
 
   // =====================
   // UPDATE ORDER STATUS
@@ -64,7 +94,7 @@ function VendorOrders() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${vendorToken}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status }),
         }
@@ -73,12 +103,12 @@ function VendorOrders() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Failed to update status");
+        throw new Error(data.message || "Update failed");
       }
 
       fetchOrders();
     } catch (err) {
-      console.error("Status update error:", err.message);
+      console.error("❌ Status update error:", err.message);
     } finally {
       setUpdatingId(null);
     }
@@ -108,10 +138,9 @@ function VendorOrders() {
   };
 
   // =====================
-  // ACTION BUTTON
+  // ACTION BUTTONS
   // =====================
   const getNextAction = (order) => {
-    // ❌ Cancelled orders → NO ACTIONS
     if (order.status === "Cancelled") {
       return (
         <p className="text-red-600 font-semibold text-sm">
@@ -170,7 +199,7 @@ function VendorOrders() {
   };
 
   // =====================
-  // LOADING STATE
+  // LOADING
   // =====================
   if (loading) {
     return (
@@ -182,6 +211,9 @@ function VendorOrders() {
     );
   }
 
+  // =====================
+  // UI (ORIGINAL STYLE)
+  // =====================
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
@@ -195,7 +227,7 @@ function VendorOrders() {
               No orders received yet
             </p>
             <p className="text-sm text-gray-400 mt-2">
-              Orders will appear here once customers place them
+              Orders will appear once customers place them
             </p>
           </div>
         ) : (

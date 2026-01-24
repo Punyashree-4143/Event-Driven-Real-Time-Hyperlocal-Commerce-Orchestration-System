@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductsByStore } from "../services/api";
 import { addToCart } from "../utils/cart";
+import { io } from "socket.io-client";
+
+// 🔌 SOCKET CONNECTION (single instance)
+const socket = io("http://localhost:5001");
 
 function Products() {
   const { storeId } = useParams();
@@ -9,8 +13,11 @@ function Products() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 NEW
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // =========================
+  // FETCH PRODUCTS
+  // =========================
   useEffect(() => {
     getProductsByStore(storeId)
       .then((data) => {
@@ -25,11 +32,34 @@ function Products() {
       .finally(() => setLoading(false));
   }, [storeId]);
 
+  // =========================
+  // 🔥 REAL-TIME INVENTORY
+  // =========================
+  useEffect(() => {
+    if (!storeId) return;
+
+    // Join store room
+    socket.emit("joinStore", storeId);
+
+    // Listen for inventory updates
+    socket.on("inventory:update", ({ productId, newStock }) => {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === productId
+            ? { ...p, stock: newStock }
+            : p
+        )
+      );
+    });
+
+    return () => {
+      socket.off("inventory:update");
+    };
+  }, [storeId]);
+
   // 🔍 FILTER PRODUCTS BY NAME
   const filteredProducts = products.filter((p) =>
-    p.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
