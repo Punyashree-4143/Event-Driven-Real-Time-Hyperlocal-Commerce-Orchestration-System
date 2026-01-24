@@ -66,6 +66,9 @@ exports.placeOrder = async (req, res) => {
       status: "Placed",
     });
 
+    // ✅ ADDED FOR REAL-TIME (NEW ORDER)
+    io.to(storeId.toString()).emit("order:update", order);
+
     res.status(201).json({ order });
   } catch (err) {
     console.error("ORDER ERROR:", err);
@@ -108,10 +111,7 @@ exports.getOrderById = async (req, res) => {
       });
     }
 
-    if (
-      order.userId.toString() !==
-      req.user._id.toString()
-    ) {
+    if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         message: "Access denied",
       });
@@ -140,25 +140,41 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    if (
-      order.userId.toString() !==
-      req.user._id.toString()
-    ) {
+    if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         message: "Access denied",
       });
     }
 
-    // ❌ Only Placed orders can be cancelled
     if (order.status !== "Placed") {
       return res.status(400).json({
-        message:
-          "Order cannot be cancelled after packing",
+        message: "Order cannot be cancelled after packing",
       });
+    }
+
+    const io = req.app.get("io");
+
+    // 🔁 INVENTORY ROLLBACK
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+
+      if (product) {
+        product.stock += item.qty;
+        await product.save();
+
+        // 🔴 REAL-TIME INVENTORY UPDATE
+        io.to(order.storeId.toString()).emit("inventory:update", {
+          productId: product._id,
+          newStock: product.stock,
+        });
+      }
     }
 
     order.status = "Cancelled";
     await order.save();
+
+    // ✅ ADDED FOR REAL-TIME (CANCEL)
+    io.to(order.storeId.toString()).emit("order:update", order);
 
     res.json({
       message: "Order cancelled successfully",
@@ -187,10 +203,7 @@ exports.checkReorderAvailability = async (req, res) => {
       });
     }
 
-    if (
-      order.userId.toString() !==
-      req.user._id.toString()
-    ) {
+    if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         message: "Access denied",
       });
@@ -199,9 +212,7 @@ exports.checkReorderAvailability = async (req, res) => {
     const unavailableItems = [];
 
     for (const item of order.items) {
-      const product = await Product.findById(
-        item.productId
-      );
+      const product = await Product.findById(item.productId);
 
       if (!product || product.stock < item.qty) {
         unavailableItems.push(item.name);
@@ -298,6 +309,10 @@ exports.updateOrderStatus = async (req, res) => {
 
     order.status = status;
     await order.save();
+
+    // ✅ ADDED FOR REAL-TIME (STATUS CHANGE)
+    const io = req.app.get("io");
+    io.to(store._id.toString()).emit("order:update", order);
 
     res.json({
       message: "Status updated",

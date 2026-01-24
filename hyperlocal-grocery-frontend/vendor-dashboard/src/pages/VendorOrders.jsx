@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { io } from "socket.io-client";
@@ -16,6 +16,9 @@ function VendorOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+
+  // 🔒 ensure joinStore runs only once
+  const joinedStoreRef = useRef(false);
 
   // =====================
   // AUTH GUARD (VENDOR)
@@ -49,8 +52,21 @@ function VendorOrders() {
       }
 
       setOrders(data.orders || []);
+
+      // ✅ JOIN STORE ROOM ONLY ONCE
+      if (
+        !joinedStoreRef.current &&
+        data.orders &&
+        data.orders.length > 0
+      ) {
+        socket.emit("joinStore", data.orders[0].storeId);
+        joinedStoreRef.current = true;
+      }
     } catch (err) {
-      console.error("❌ Vendor order fetch error:", err.message);
+      console.error(
+        "❌ Vendor order fetch error:",
+        err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -62,22 +78,20 @@ function VendorOrders() {
   useEffect(() => {
     if (!token) return;
 
-    fetchOrders();
-
     socket.auth = { token };
     socket.connect();
 
-    socket.on("order:update", (updatedOrder) => {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o._id === updatedOrder._id ? updatedOrder : o
-        )
-      );
+    fetchOrders();
+
+    // 🔔 ORDER UPDATE (place / cancel / status change)
+    socket.on("order:update", () => {
+      fetchOrders();
     });
 
     return () => {
       socket.off("order:update");
       socket.disconnect();
+      joinedStoreRef.current = false;
     };
   }, [token]);
 
@@ -108,7 +122,10 @@ function VendorOrders() {
 
       fetchOrders();
     } catch (err) {
-      console.error("❌ Status update error:", err.message);
+      console.error(
+        "❌ Status update error:",
+        err.message
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -121,7 +138,8 @@ function VendorOrders() {
     const styles = {
       Placed: "bg-yellow-100 text-yellow-700",
       Packed: "bg-blue-100 text-blue-700",
-      "Out for Delivery": "bg-purple-100 text-purple-700",
+      "Out for Delivery":
+        "bg-purple-100 text-purple-700",
       Delivered: "bg-green-100 text-green-700",
       Cancelled: "bg-red-100 text-red-700",
     };
@@ -129,7 +147,8 @@ function VendorOrders() {
     return (
       <span
         className={`px-3 py-1 text-xs font-semibold rounded-full ${
-          styles[status] || "bg-gray-100 text-gray-600"
+          styles[status] ||
+          "bg-gray-100 text-gray-600"
         }`}
       >
         {status}
@@ -155,10 +174,14 @@ function VendorOrders() {
       return (
         <button
           disabled={disabled}
-          onClick={() => updateStatus(order._id, "Packed")}
+          onClick={() =>
+            updateStatus(order._id, "Packed")
+          }
           className="btn-primary"
         >
-          {disabled ? "Updating..." : "Mark as Packed"}
+          {disabled
+            ? "Updating..."
+            : "Mark as Packed"}
         </button>
       );
     }
@@ -168,11 +191,16 @@ function VendorOrders() {
         <button
           disabled={disabled}
           onClick={() =>
-            updateStatus(order._id, "Out for Delivery")
+            updateStatus(
+              order._id,
+              "Out for Delivery"
+            )
           }
           className="btn-primary"
         >
-          {disabled ? "Updating..." : "Out for Delivery"}
+          {disabled
+            ? "Updating..."
+            : "Out for Delivery"}
         </button>
       );
     }
@@ -186,7 +214,9 @@ function VendorOrders() {
           }
           className="btn-success"
         >
-          {disabled ? "Updating..." : "Mark as Delivered"}
+          {disabled
+            ? "Updating..."
+            : "Mark as Delivered"}
         </button>
       );
     }
@@ -212,7 +242,7 @@ function VendorOrders() {
   }
 
   // =====================
-  // UI (ORIGINAL STYLE)
+  // UI (UNCHANGED)
   // =====================
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -227,7 +257,8 @@ function VendorOrders() {
               No orders received yet
             </p>
             <p className="text-sm text-gray-400 mt-2">
-              Orders will appear once customers place them
+              Orders will appear once customers place
+              them
             </p>
           </div>
         ) : (

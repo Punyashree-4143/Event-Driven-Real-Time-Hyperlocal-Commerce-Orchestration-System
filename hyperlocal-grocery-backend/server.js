@@ -7,7 +7,9 @@ const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
 
-// Routes
+// =========================
+// ROUTES
+// =========================
 const authRoutes = require("./routes/auth");
 const storeRoutes = require("./routes/storeRoutes");
 const productRoutes = require("./routes/product");
@@ -19,59 +21,93 @@ connectDB();
 
 const app = express();
 
+/* =========================
+   ALLOWED FRONTEND ORIGINS
+   =========================
+   5173 → Customer + Admin frontend
+   5174 → Vendor dashboard
+*/
 const allowedOrigins = [
-  "http://localhost:5173", // customer + admin
-  "http://localhost:5174", // vendor
+  "http://localhost:5173", // Customer + Admin
+  "http://localhost:5174", // Vendor
 ];
 
+/* =========================
+   MIDDLEWARE
+   ========================= */
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(
   cors({
-    origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return cb(null, true);
+    origin: (origin, callback) => {
+      // Allow Postman / server-to-server
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      cb(new Error("Not allowed by CORS"));
+
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// API routes
+/* =========================
+   API ROUTES
+   ========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 
+/* =========================
+   HEALTH CHECK
+   ========================= */
 app.get("/api/health", (req, res) => {
   res.json({ status: "Backend running 🚀" });
 });
 
-// HTTP + SOCKET
+/* =========================
+   HTTP + SOCKET.IO
+   ========================= */
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: allowedOrigins, credentials: true },
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
 });
 
-// 🔥 expose io
+// 🔥 Make socket available inside controllers
 app.set("io", io);
 
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
-  // 👥 customers join store room
-  socket.on("joinStore", (storeId) => {
-    socket.join(storeId);
-    console.log(`🏪 Joined store room: ${storeId}`);
-  });
-
-  // 📦 tracking room
+  /* =========================
+     ORDER TRACKING ROOM
+     (existing feature – unchanged)
+     ========================= */
   socket.on("joinOrder", (orderId) => {
     socket.join(orderId);
+    console.log(`📦 Socket joined order room: ${orderId}`);
+  });
+
+  /* =========================
+     STORE ROOM (ADDED)
+     Required for:
+     - new order
+     - cancel order
+     - status update
+     - inventory update
+     ========================= */
+  socket.on("joinStore", (storeId) => {
+    socket.join(storeId);
+    console.log(`🏪 Socket joined store room: ${storeId}`);
   });
 
   socket.on("disconnect", () => {
@@ -79,7 +115,11 @@ io.on("connection", (socket) => {
   });
 });
 
+/* =========================
+   SERVER START
+   ========================= */
 const PORT = process.env.PORT || 5001;
-server.listen(PORT, () =>
-  console.log(`✅ Server running on http://localhost:${PORT}`)
-);
+
+server.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
