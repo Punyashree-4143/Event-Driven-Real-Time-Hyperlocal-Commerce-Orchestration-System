@@ -12,15 +12,15 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
 
-    if (!user || user.role !== "customer") {
-      return res
-        .status(403)
-        .json({ message: "Customer access only" });
+    // 🔥 DO NOT CHECK ROLE HERE
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user;
+    req.user = user; // attach user for next middleware
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

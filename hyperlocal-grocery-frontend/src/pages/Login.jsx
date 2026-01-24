@@ -33,25 +33,31 @@ function Login() {
         return;
       }
 
-      // 🚫 BLOCK VENDORS FROM CUSTOMER APP
-      if (data.role !== "customer") {
-        alert("Please login using a CUSTOMER account");
+      // 🚫 BLOCK VENDORS ONLY
+      if (data.role === "vendor") {
+        alert("Please login using the Vendor Dashboard");
         return;
       }
 
-      // ✅ STORE CUSTOMER TOKEN
+      // ✅ STORE TOKEN
       localStorage.setItem("userToken", data.token);
 
-      // ✅ STORE CUSTOMER USER IN CONTEXT
+      // ✅ STORE USER (WITH ROLE)
       login({
         _id: data._id,
         name: data.name,
         email: data.email,
-        role: data.role,
+        role: data.role, // customer OR admin
       });
 
       alert("Login successful");
-      navigate("/stores");
+
+      // 🔀 REDIRECT BASED ON ROLE
+      if (data.role === "admin") {
+        navigate("/admin/stores");
+      } else {
+        navigate("/stores");
+      }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
       alert("Something went wrong");
@@ -60,7 +66,7 @@ function Login() {
 
   return (
     <div className="auth-container">
-      <h2>Customer Login</h2>
+      <h2>Login</h2>
 
       <form onSubmit={handleSubmit}>
         <input
@@ -84,9 +90,27 @@ function Login() {
         <button type="submit">Login</button>
       </form>
 
+      {/* CUSTOMER REGISTER */}
       <p className="auth-link">
         Don’t have an account?{" "}
-        <span onClick={() => navigate("/register")}>Register</span>
+        <span onClick={() => navigate("/register")}>
+          Register
+        </span>
+      </p>
+
+      {/* 🔐 ADMIN LOGIN LINK */}
+      <p className="auth-link">
+        Are you an admin?{" "}
+        <span
+          onClick={() => navigate("/admin/login")}
+          style={{
+            color: "#d32f2f",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          Admin Login
+        </span>
       </p>
     </div>
   );

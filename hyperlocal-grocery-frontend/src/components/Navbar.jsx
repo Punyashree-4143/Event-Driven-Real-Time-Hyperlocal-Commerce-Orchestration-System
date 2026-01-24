@@ -1,41 +1,43 @@
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 function Navbar() {
   const navigate = useNavigate();
+  const { auth } = useContext(AuthContext);
 
   return (
     <nav className="sticky top-0 z-20 bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* 🛒 Logo */}
+      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <h2
           onClick={() => navigate("/")}
-          className="text-lg sm:text-xl font-bold text-green-700 cursor-pointer"
+          className="text-xl font-bold text-green-700 cursor-pointer"
         >
           🛒 Hyperlocal Grocery
         </h2>
 
-        {/* 🔗 Links */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => navigate("/stores")}
-            className="px-3 py-1.5 rounded-lg text-sm sm:text-base text-gray-700 hover:bg-green-50 hover:text-green-700 transition"
-          >
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate("/stores")}>
             Stores
           </button>
 
-          <button
-            onClick={() => navigate("/cart")}
-            className="px-3 py-1.5 rounded-lg text-sm sm:text-base text-gray-700 hover:bg-green-50 hover:text-green-700 transition"
-          >
+          <button onClick={() => navigate("/cart")}>
             Cart
           </button>
 
-          <button
-            onClick={() => navigate("/profile")}
-            className="px-3 py-1.5 rounded-lg text-sm sm:text-base text-gray-700 hover:bg-green-50 hover:text-green-700 transition"
-          >
+          <button onClick={() => navigate("/profile")}>
             Profile
           </button>
+
+          {/* 🔥 ADMIN ONLY */}
+          {auth?.user?.role === "admin" && (
+            <button
+              onClick={() => navigate("/admin/stores")}
+              className="text-red-600 font-semibold"
+            >
+              Admin
+            </button>
+          )}
         </div>
       </div>
     </nav>

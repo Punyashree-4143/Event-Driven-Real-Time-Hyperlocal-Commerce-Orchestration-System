@@ -7,11 +7,14 @@ const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
 
-// Routes
+// =========================
+// ROUTES
+// =========================
 const authRoutes = require("./routes/auth");
 const storeRoutes = require("./routes/storeRoutes");
 const productRoutes = require("./routes/product");
 const orderRoutes = require("./routes/order");
+const adminRoutes = require("./routes/adminRoutes");
 
 dotenv.config();
 connectDB();
@@ -20,10 +23,13 @@ const app = express();
 
 /* =========================
    ALLOWED FRONTEND ORIGINS
-   ========================= */
+   =========================
+   5173 → Customer + Admin frontend
+   5174 → Vendor dashboard
+*/
 const allowedOrigins = [
-  "http://localhost:5173", // ✅ Vendor dashboard
-  "http://localhost:5174", // ✅ Customer frontend
+  "http://localhost:5173", // Customer + Admin
+  "http://localhost:5174", // Vendor
 ];
 
 /* =========================
@@ -35,7 +41,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow Postman / server-to-server
+      // Allow Postman / server-to-server
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -49,12 +55,13 @@ app.use(
 );
 
 /* =========================
-   ROUTES
+   API ROUTES
    ========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* =========================
    HEALTH CHECK
@@ -75,8 +82,17 @@ const io = new Server(server, {
   },
 });
 
+// 🔥 Make socket available inside controllers
+app.set("io", io);
+
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
+
+  // Join order-specific room
+  socket.on("joinOrder", (orderId) => {
+    socket.join(orderId);
+    console.log(`📦 Socket joined order room: ${orderId}`);
+  });
 
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
@@ -87,6 +103,7 @@ io.on("connection", (socket) => {
    SERVER START
    ========================= */
 const PORT = process.env.PORT || 5001;
+
 server.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
