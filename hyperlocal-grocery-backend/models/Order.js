@@ -46,6 +46,22 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: "Placed",
     },
+
+    /* =========================
+       🚚 DELIVERY FIELDS (NEW)
+       ========================= */
+
+    deliveryPartner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    deliveryStatus: {
+      type: String,
+      enum: ["Assigned", "Picked Up", "On the Way", "Delivered"],
+      default: null,
+    },
   },
   { timestamps: true }
 );

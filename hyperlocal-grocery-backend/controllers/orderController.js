@@ -66,7 +66,7 @@ exports.placeOrder = async (req, res) => {
       status: "Placed",
     });
 
-    // ✅ ADDED FOR REAL-TIME (NEW ORDER)
+    // 🔔 Notify vendor (existing)
     io.to(storeId.toString()).emit("order:update", order);
 
     res.status(201).json({ order });
@@ -173,7 +173,7 @@ exports.cancelOrder = async (req, res) => {
     order.status = "Cancelled";
     await order.save();
 
-    // ✅ ADDED FOR REAL-TIME (CANCEL)
+    // 🔔 Notify vendor
     io.to(order.storeId.toString()).emit("order:update", order);
 
     res.json({
@@ -264,7 +264,7 @@ exports.getVendorOrders = async (req, res) => {
 };
 
 /* ======================================================
-   VENDOR – UPDATE ORDER STATUS (LOCKED FLOW)
+   VENDOR – UPDATE ORDER STATUS (FIXED)
    ====================================================== */
 exports.updateOrderStatus = async (req, res) => {
   try {
@@ -292,10 +292,9 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
+    // ✅ FIX: Vendor stops at PACKED
     const validTransitions = {
       Placed: ["Packed"],
-      Packed: ["Out for Delivery"],
-      "Out for Delivery": ["Delivered"],
     };
 
     if (
@@ -310,9 +309,15 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     await order.save();
 
-    // ✅ ADDED FOR REAL-TIME (STATUS CHANGE)
     const io = req.app.get("io");
+
+    // 🔔 Vendor dashboard update (existing)
     io.to(store._id.toString()).emit("order:update", order);
+
+    // 🚚 Notify delivery (existing socket logic)
+    if (status === "Packed") {
+      io.to("delivery").emit("delivery:update");
+    }
 
     res.json({
       message: "Status updated",

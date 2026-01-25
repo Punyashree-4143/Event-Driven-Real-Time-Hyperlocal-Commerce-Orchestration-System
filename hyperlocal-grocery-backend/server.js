@@ -7,72 +7,54 @@ const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
 
-// =========================
 // ROUTES
-// =========================
 const authRoutes = require("./routes/auth");
 const storeRoutes = require("./routes/storeRoutes");
 const productRoutes = require("./routes/product");
 const orderRoutes = require("./routes/order");
 const adminRoutes = require("./routes/adminRoutes");
+const deliveryRoutes = require("./routes/delivery");
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-/* =========================
-   ALLOWED FRONTEND ORIGINS
-   =========================
-   5173 → Customer + Admin frontend
-   5174 → Vendor dashboard
-*/
 const allowedOrigins = [
-  "http://localhost:5173", // Customer + Admin
-  "http://localhost:5174", // Vendor
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
 ];
 
-/* =========================
-   MIDDLEWARE
-   ========================= */
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow Postman / server-to-server
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin))
         return callback(null, true);
-      }
-
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-/* =========================
-   API ROUTES
-   ========================= */
+// API ROUTES
 app.use("/api/auth", authRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/delivery", deliveryRoutes);
 
-/* =========================
-   HEALTH CHECK
-   ========================= */
+// HEALTH CHECK
 app.get("/api/health", (req, res) => {
   res.json({ status: "Backend running 🚀" });
 });
 
-/* =========================
-   HTTP + SOCKET.IO
-   ========================= */
+// HTTP + SOCKET
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -82,32 +64,28 @@ const io = new Server(server, {
   },
 });
 
-// 🔥 Make socket available inside controllers
+// Make io available in controllers
 app.set("io", io);
 
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
-  /* =========================
-     ORDER TRACKING ROOM
-     (existing feature – unchanged)
-     ========================= */
+  // ORDER ROOM
   socket.on("joinOrder", (orderId) => {
     socket.join(orderId);
-    console.log(`📦 Socket joined order room: ${orderId}`);
+    console.log(`📦 Joined order room: ${orderId}`);
   });
 
-  /* =========================
-     STORE ROOM (ADDED)
-     Required for:
-     - new order
-     - cancel order
-     - status update
-     - inventory update
-     ========================= */
+  // STORE ROOM
   socket.on("joinStore", (storeId) => {
     socket.join(storeId);
-    console.log(`🏪 Socket joined store room: ${storeId}`);
+    console.log(`🏪 Joined store room: ${storeId}`);
+  });
+
+  // 🚚 DELIVERY ROOM (NEW)
+  socket.on("joinDelivery", () => {
+    socket.join("delivery");
+    console.log("🚚 Delivery joined delivery room");
   });
 
   socket.on("disconnect", () => {
@@ -115,9 +93,6 @@ io.on("connection", (socket) => {
   });
 });
 
-/* =========================
-   SERVER START
-   ========================= */
 const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => {

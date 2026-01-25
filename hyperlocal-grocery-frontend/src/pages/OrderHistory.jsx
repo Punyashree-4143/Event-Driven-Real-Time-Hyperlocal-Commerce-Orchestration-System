@@ -23,7 +23,9 @@ function OrderHistory() {
     fetchOrders();
   }, []);
 
-  // 🔁 REORDER
+  /* =====================
+     REORDER
+     ===================== */
   const reorder = (order) => {
     localStorage.setItem(
       "cart",
@@ -40,7 +42,9 @@ function OrderHistory() {
     navigate("/cart");
   };
 
-  // ❌ CANCEL ORDER
+  /* =====================
+     CANCEL ORDER
+     ===================== */
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Cancel this order?")) return;
 
@@ -63,6 +67,39 @@ function OrderHistory() {
     }
   };
 
+  /* =====================
+     STATUS RESOLVER (FIX)
+     ===================== */
+  const getOrderStatus = (order) => {
+    if (order.deliveryStatus === "Delivered") {
+      return "Delivered";
+    }
+    return order.status;
+  };
+
+  /* =====================
+     STATUS BADGE
+     ===================== */
+  const statusBadge = (status) => {
+    const styles = {
+      Placed: "bg-yellow-100 text-yellow-700",
+      Packed: "bg-blue-100 text-blue-700",
+      "Out for Delivery": "bg-purple-100 text-purple-700",
+      Delivered: "bg-green-100 text-green-700",
+      Cancelled: "bg-red-100 text-red-700",
+    };
+
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          styles[status] || "bg-gray-100 text-gray-600"
+        }`}
+      >
+        {status}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <h2 className="text-2xl font-semibold mb-6">
@@ -73,45 +110,60 @@ function OrderHistory() {
         <p>No orders found</p>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-white p-4 rounded-xl shadow space-y-2"
-            >
-              <p><strong>ID:</strong> {order._id}</p>
-              <p><strong>Total:</strong> ₹{order.totalAmount}</p>
-              <p><strong>Status:</strong> {order.status}</p>
+          {orders.map((order) => {
+            const finalStatus = getOrderStatus(order);
 
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() =>
-                    navigate(`/tracking/${order._id}`)
-                  }
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  Track
-                </button>
+            return (
+              <div
+                key={order._id}
+                className={`bg-white p-4 rounded-xl shadow space-y-2 ${
+                  finalStatus === "Cancelled"
+                    ? "border border-red-200 bg-red-50"
+                    : ""
+                }`}
+              >
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">
+                    Order #{order._id.slice(-6)}
+                  </p>
+                  {statusBadge(finalStatus)}
+                </div>
 
-                <button
-                  onClick={() => reorder(order)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  Reorder
-                </button>
+                <p className="text-lg font-bold">
+                  ₹{order.totalAmount}
+                </p>
 
-                {order.status === "Placed" && (
+                <div className="flex gap-3 mt-3 flex-wrap">
                   <button
                     onClick={() =>
-                      cancelOrder(order._id)
+                      navigate(`/tracking/${order._id}`)
                     }
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
                   >
-                    Cancel
+                    Track
                   </button>
-                )}
+
+                  <button
+                    onClick={() => reorder(order)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+                  >
+                    Reorder
+                  </button>
+
+                  {order.status === "Placed" && (
+                    <button
+                      onClick={() =>
+                        cancelOrder(order._id)
+                      }
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

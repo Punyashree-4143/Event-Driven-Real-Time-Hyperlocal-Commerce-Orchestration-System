@@ -4,7 +4,7 @@ import { getProductsByStore } from "../services/api";
 import { addToCart } from "../utils/cart";
 import { io } from "socket.io-client";
 
-// 🔌 SOCKET CONNECTION (single instance)
+// 🔌 SOCKET (single instance)
 const socket = io("http://localhost:5001");
 
 function Products() {
@@ -14,34 +14,54 @@ function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cartItems, setCartItems] = useState([]);
 
-  // =========================
-  // FETCH PRODUCTS
-  // =========================
+  // 🔥 variant state PER PRODUCT
+  const [variants, setVariants] = useState({});
+
+  /* =========================
+     CART STATE
+     ========================= */
+  const refreshCart = () => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    setCartItems(cart);
+  };
+
+  useEffect(() => {
+    refreshCart();
+  }, []);
+
+  const isInCart = (productId, variant) =>
+    cartItems.some(
+      (i) => i._id === productId && i.variant === variant
+    );
+
+  /* =========================
+     FETCH PRODUCTS
+     ========================= */
   useEffect(() => {
     getProductsByStore(storeId)
       .then((data) => {
-        setProducts(
-          Array.isArray(data.products) ? data.products : []
-        );
-      })
-      .catch((err) => {
-        console.error("Error fetching products:", err);
-        setProducts([]);
+        setProducts(data.products || []);
+
+        // default variant = 1 kg
+        const initial = {};
+        data.products?.forEach((p) => {
+          initial[p._id] = "1 kg";
+        });
+        setVariants(initial);
       })
       .finally(() => setLoading(false));
   }, [storeId]);
 
-  // =========================
-  // 🔥 REAL-TIME INVENTORY
-  // =========================
+  /* =========================
+     REAL-TIME INVENTORY
+     ========================= */
   useEffect(() => {
     if (!storeId) return;
 
-    // Join store room
     socket.emit("joinStore", storeId);
 
-    // Listen for inventory updates
     socket.on("inventory:update", ({ productId, newStock }) => {
       setProducts((prev) =>
         prev.map((p) =>
@@ -52,110 +72,146 @@ function Products() {
       );
     });
 
-    return () => {
-      socket.off("inventory:update");
-    };
+    return () => socket.off("inventory:update");
   }, [storeId]);
 
-  // 🔍 FILTER PRODUCTS BY NAME
+  /* =========================
+     HELPERS
+     ========================= */
+  const getDisplayPrice = (price, variant) => {
+    if (variant === "250 g") return Math.round(price * 0.25);
+    if (variant === "500 g") return Math.round(price * 0.5);
+    return price; // 1 kg
+  };
+
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleAddToCart = (product) => {
+    const variant = variants[product._id];
+    addToCart(product, storeId, variant);
+    refreshCart();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">
+      <div className="min-h-screen flex items-center justify-center">
         Loading products...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* 🔝 Header */}
       <header className="bg-white shadow p-4 sticky top-0 z-10 space-y-3">
-        <h2 className="text-xl font-semibold text-gray-800">
+        <h2 className="text-xl font-semibold">
           Available Products
         </h2>
 
-        {/* 🔍 Search Bar */}
         <input
           type="text"
           placeholder="Search products..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-full border focus:ring-2 focus:ring-green-500 outline-none"
+          className="w-full px-4 py-2 rounded-full border"
         />
       </header>
 
       {/* 🛒 Products */}
       <section className="p-4">
-        {filteredProducts.length === 0 ? (
-          <p className="text-gray-500">
-            No products found
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((p) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredProducts.map((p) => {
+            const selectedVariant = variants[p._id];
+            const added = isInCart(p._id, selectedVariant);
+
+            return (
               <div
                 key={p._id}
-                className="bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col"
+                className="bg-white rounded-xl shadow p-4 flex flex-col"
               >
                 {/* 🖼 Image */}
                 <img
                   src={p.image}
                   alt={p.name}
-                  className="h-32 w-full object-cover rounded-lg mb-3"
+                  className="h-32 w-full object-cover rounded mb-2"
                   onError={(e) =>
                     (e.target.src =
                       "https://via.placeholder.com/150")
                   }
                 />
 
-                {/* 📦 Info */}
-                <h3 className="font-medium text-gray-800">
-                  {p.name}
-                </h3>
+                {/* 📦 Name */}
+                <h3 className="font-medium">{p.name}</h3>
 
-                <p className="text-green-600 font-semibold mt-1">
-                  ₹{p.price}
+                {/* ⚖ Variant Selector */}
+                <div className="flex gap-2 my-2">
+                  {["250 g", "500 g", "1 kg"].map((v) => (
+                    <button
+                      key={v}
+                      onClick={() =>
+                        setVariants((prev) => ({
+                          ...prev,
+                          [p._id]: v,
+                        }))
+                      }
+                      className={`px-2 py-1 text-xs rounded border ${
+                        selectedVariant === v
+                          ? "bg-green-600 text-white"
+                          : "bg-white"
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 💰 Price */}
+                <p className="text-green-600 font-semibold text-lg">
+                  ₹{getDisplayPrice(p.price, selectedVariant)}
+                </p>
+                <p className="text-xs text-gray-500">
+                  ₹{p.price} / kg
                 </p>
 
                 {/* 📊 Stock */}
-                <p
-                  className={`text-sm mt-1 ${
-                    p.stock > 0
-                      ? "text-orange-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  {p.stock > 0
-                    ? `Only ${p.stock} left`
-                    : "Out of stock"}
+                <p className="text-sm text-orange-600 mt-1">
+                  Only {p.stock} left
                 </p>
 
-                {/* 🛒 Action */}
+                {/* 🛒 Add */}
                 <button
-                  disabled={p.stock === 0}
-                  onClick={() => {
-                    addToCart(p, storeId);
-                    navigate("/cart");
-                  }}
-                  className={`mt-auto py-2 rounded-lg text-sm font-medium transition ${
-                    p.stock === 0
-                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : "bg-green-600 text-white hover:bg-green-700"
+                  disabled={p.stock === 0 || added}
+                  onClick={() => handleAddToCart(p)}
+                  className={`mt-auto py-2 rounded text-sm font-semibold ${
+                    added
+                      ? "bg-gray-300"
+                      : "bg-green-600 text-white"
                   }`}
                 >
-                  {p.stock === 0
-                    ? "Unavailable"
-                    : "Add to Cart"}
+                  {added ? "✓ Added" : "Add to Cart"}
                 </button>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </section>
+
+      {/* 🧺 Sticky Cart Bar */}
+      {cartItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-black text-white px-4 py-3 flex justify-between">
+          <span>
+            🛒 {cartItems.length} items
+          </span>
+          <button
+            onClick={() => navigate("/cart")}
+            className="bg-green-500 px-4 py-1 rounded"
+          >
+            View Cart →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

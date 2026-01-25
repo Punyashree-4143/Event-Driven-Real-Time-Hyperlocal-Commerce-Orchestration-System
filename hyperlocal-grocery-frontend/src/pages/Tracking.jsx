@@ -25,11 +25,11 @@ function Tracking() {
         if (res.ok) {
           setOrder(data.order);
 
-          // 🔥 REDIRECT AFTER DELIVERY
-          if (data.order.status === "Delivered") {
+          // ✅ Redirect after delivery
+          if (data.order.deliveryStatus === "Delivered") {
             setTimeout(() => {
               navigate("/orders");
-            }, 2000);
+            }, 2500);
           }
         }
       } catch (err) {
@@ -38,7 +38,7 @@ function Tracking() {
     };
 
     fetchOrder();
-    const interval = setInterval(fetchOrder, 5000); // poll every 5s
+    const interval = setInterval(fetchOrder, 5000);
 
     return () => clearInterval(interval);
   }, [orderId, userToken, navigate]);
@@ -51,80 +51,130 @@ function Tracking() {
     );
   }
 
+  /* =====================
+     STATUS RESOLUTION
+     ===================== */
+  const getCustomerStatus = () => {
+    if (order.deliveryStatus === "Delivered") return "Delivered";
+    if (order.deliveryStatus) return order.deliveryStatus;
+    return order.status;
+  };
+
+  const customerStatus = getCustomerStatus();
+
   const steps = [
     "Placed",
     "Packed",
-    "Out for Delivery",
+    "Assigned",
+    "Picked Up",
+    "On the Way",
     "Delivered",
   ];
 
+  const isCompleted = (step) =>
+    steps.indexOf(step) <
+    steps.indexOf(customerStatus);
+
   const isActive = (step) =>
-    steps.indexOf(step) <= steps.indexOf(order.status);
+    step === customerStatus;
+
+  /* =====================
+     CANCELLED
+     ===================== */
+  if (order.status === "Cancelled") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
+        <h2 className="text-3xl font-bold text-red-600 mb-2">
+          ❌ Order Cancelled
+        </h2>
+        <p className="text-gray-600 mb-6">
+          This order was cancelled by you
+        </p>
+        <button
+          onClick={() => navigate("/orders")}
+          className="bg-black text-white px-6 py-2 rounded-lg"
+        >
+          Back to Orders
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 flex justify-center">
-      <div className="w-full max-w-xl bg-white rounded-xl shadow p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-          Order Tracking
+      <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">
+          🚚 Order Tracking
         </h2>
 
-        <p className="text-sm text-gray-600 mb-6">
-          <strong>Order ID:</strong> {order._id}
+        <p className="text-sm text-gray-500 mb-6">
+          Order #{order._id.slice(-6)}
         </p>
 
-        {/* 🚦 Tracking Steps */}
-        <ul className="space-y-4">
-          <li
-            className={`flex items-center gap-3 ${
-              isActive("Placed")
-                ? "text-green-600 font-medium"
-                : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl">📦</span> Order Placed
-          </li>
+        {/* 🚦 Timeline */}
+        <div className="space-y-6">
+          {steps.map((step, index) => (
+            <div key={step} className="flex gap-4 items-start">
+              {/* DOT + LINE */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-4 h-4 rounded-full ${
+                    isCompleted(step)
+                      ? "bg-green-600"
+                      : isActive(step)
+                      ? "bg-green-500 animate-pulse"
+                      : "bg-gray-300"
+                  }`}
+                />
+                {index !== steps.length - 1 && (
+                  <div
+                    className={`w-1 h-8 ${
+                      isCompleted(step)
+                        ? "bg-green-600"
+                        : "bg-gray-300"
+                    }`}
+                  />
+                )}
+              </div>
 
-          <li
-            className={`flex items-center gap-3 ${
-              isActive("Packed")
-                ? "text-green-600 font-medium"
-                : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl">🧺</span> Packed
-          </li>
+              {/* LABEL */}
+              <div>
+                <p
+                  className={`font-medium ${
+                    isCompleted(step) || isActive(step)
+                      ? "text-green-700"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {step}
+                </p>
 
-          <li
-            className={`flex items-center gap-3 ${
-              isActive("Out for Delivery")
-                ? "text-green-600 font-medium"
-                : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl">🚚</span> Out for Delivery
-          </li>
+                {isActive(step) && (
+                  <p className="text-xs text-gray-500">
+                    In progress
+                  </p>
+                )}
 
-          <li
-            className={`flex items-center gap-3 ${
-              order.status === "Delivered"
-                ? "text-green-600 font-medium"
-                : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl">✅</span> Delivered
-          </li>
-        </ul>
+                {isCompleted(step) && (
+                  <p className="text-xs text-gray-400">
+                    Completed
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        {/* 📌 Status */}
+        {/* STATUS */}
         <div className="mt-6 text-lg font-semibold">
           Status:{" "}
           <span className="text-green-600">
-            {order.status}
+            {customerStatus}
           </span>
         </div>
 
-        {/* 🎉 Redirect Message */}
-        {order.status === "Delivered" && (
+        {/* REDIRECT MESSAGE */}
+        {customerStatus === "Delivered" && (
           <p className="mt-4 text-green-600 text-sm">
             🎉 Order delivered! Redirecting to order history...
           </p>
