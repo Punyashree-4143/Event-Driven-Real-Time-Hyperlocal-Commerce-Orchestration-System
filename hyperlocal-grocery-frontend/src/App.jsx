@@ -19,6 +19,8 @@ import AdminRoute from "./pages/AdminRoute";
 import AdminLogin from "./pages/AdminLogin";
 
 function App() {
+  
+
   return (
     <>
       {/* 🔥 GLOBAL NAVBAR */}
@@ -30,7 +32,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
-        {/* 🔐 ADMIN LOGIN (MUST COME FIRST) */}
+        {/* 🔐 ADMIN LOGIN */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* CUSTOMER */}

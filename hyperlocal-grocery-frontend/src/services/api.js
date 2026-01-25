@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:5001/api";
+// ✅ Use environment variable
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 /* =========================
    STORES
@@ -16,11 +17,11 @@ export const getNearbyStores = async (lat, lng) => {
 };
 
 /* =========================
-   PRODUCTS (✅ FIXED)
+   PRODUCTS
 ========================= */
 export const getProductsByStore = async (storeId) => {
   const res = await fetch(
-    `http://localhost:5001/api/products/${storeId}`
+    `${BASE_URL}/products/${storeId}`
   );
 
   if (!res.ok) {
@@ -31,7 +32,7 @@ export const getProductsByStore = async (storeId) => {
 };
 
 /* =========================
-   AUTH (if used)
+   AUTH
 ========================= */
 export const loginUser = async (data) => {
   const res = await fetch(`${BASE_URL}/auth/login`, {
