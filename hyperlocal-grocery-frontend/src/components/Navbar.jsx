@@ -13,7 +13,7 @@ function Navbar() {
           onClick={() => navigate("/")}
           className="text-xl font-bold text-green-700 cursor-pointer"
         >
-          🛒 Hyperlocal Grocery
+          🛒 Event-Driven Real-Time Hyperlocal Commerce Orchestration System
         </h2>
 
         <div className="flex items-center gap-4">
