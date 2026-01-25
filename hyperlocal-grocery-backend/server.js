@@ -20,28 +20,23 @@ connectDB();
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-];
-
+/* =====================
+   MIDDLEWARE
+   ===================== */
 app.use(express.json());
 app.use(cookieParser());
 
+// ✅ OPEN CORS (TEMP for Render + Vercel)
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin))
-        return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true,       // allow all origins
     credentials: true,
   })
 );
 
-// API ROUTES
+/* =====================
+   API ROUTES
+   ===================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/products", productRoutes);
@@ -49,17 +44,21 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/delivery", deliveryRoutes);
 
-// HEALTH CHECK
+/* =====================
+   HEALTH CHECK
+   ===================== */
 app.get("/api/health", (req, res) => {
   res.json({ status: "Backend running 🚀" });
 });
 
-// HTTP + SOCKET
+/* =====================
+   HTTP + SOCKET.IO
+   ===================== */
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "*",        // allow all socket origins
     credentials: true,
   },
 });
@@ -67,22 +66,25 @@ const io = new Server(server, {
 // Make io available in controllers
 app.set("io", io);
 
+/* =====================
+   SOCKET EVENTS
+   ===================== */
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
-  // ORDER ROOM
+  // 📦 ORDER ROOM
   socket.on("joinOrder", (orderId) => {
     socket.join(orderId);
     console.log(`📦 Joined order room: ${orderId}`);
   });
 
-  // STORE ROOM
+  // 🏪 STORE ROOM
   socket.on("joinStore", (storeId) => {
     socket.join(storeId);
     console.log(`🏪 Joined store room: ${storeId}`);
   });
 
-  // 🚚 DELIVERY ROOM (NEW)
+  // 🚚 DELIVERY ROOM
   socket.on("joinDelivery", () => {
     socket.join("delivery");
     console.log("🚚 Delivery joined delivery room");
@@ -93,8 +95,11 @@ io.on("connection", (socket) => {
   });
 });
 
+/* =====================
+   SERVER START
+   ===================== */
 const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
