@@ -16,7 +16,9 @@ const CreateStore = () => {
   const token = localStorage.getItem("vendorToken");
   const API_BASE = import.meta.env.VITE_API_URL;
 
-  // 🔄 WAIT FOR STORE TO LOAD
+  /* =========================
+     LOADING STATE
+     ========================= */
   if (loading) {
     return (
       <div className="p-8">
@@ -25,7 +27,9 @@ const CreateStore = () => {
     );
   }
 
-  // 🏪 STORE EXISTS → SHOW DETAILS
+  /* =========================
+     STORE EXISTS
+     ========================= */
   if (store) {
     return (
       <div className="p-8 max-w-2xl">
@@ -70,13 +74,17 @@ const CreateStore = () => {
     );
   }
 
-  // 📍 MAP LOCATION HANDLER
+  /* =========================
+     MAP HANDLER
+     ========================= */
   const handleLocationSelect = ({ lat, lng }) => {
     setLat(lat);
     setLng(lng);
   };
 
-  // 🆕 CREATE STORE
+  /* =========================
+     CREATE STORE
+     ========================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -86,7 +94,7 @@ const CreateStore = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/stores`, {
+      const res = await fetch(`${API_BASE}/api/stores`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,10 +111,10 @@ const CreateStore = () => {
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        alert(data.message || "Failed to create store");
+        const text = await res.text();
+        console.error("CREATE STORE FAILED:", text);
+        alert("Failed to create store");
         return;
       }
 
@@ -118,7 +126,9 @@ const CreateStore = () => {
     }
   };
 
-  // 📝 CREATE STORE FORM
+  /* =========================
+     CREATE STORE FORM
+     ========================= */
   return (
     <div className="p-8 max-w-lg">
       <h1 className="text-2xl font-bold mb-6">Create Store</h1>
@@ -148,7 +158,7 @@ const CreateStore = () => {
           <MapPicker onLocationSelect={handleLocationSelect} />
         </div>
 
-        {/* SELECTED COORDINATES */}
+        {/* COORDINATES */}
         <div className="grid grid-cols-2 gap-4">
           <input
             value={lat}
