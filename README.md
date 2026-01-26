@@ -5,6 +5,7 @@ The Event-Driven Real-Time Hyperlocal Commerce Orchestration System is a full-st
 🌐 Live Deployment
 
 The project has been successfully deployed and is accessible through the following links. The deployed version demonstrates real-time order flow, inventory synchronization, and role-based dashboards in a production environment.
+
 Customer & Admin Dashboard: https://hyperlocal-grocery-platform.vercel.app/
 
 Vendor Dashboard: https://hyperlocal-grocery-platform-8dad.vercel.app/
