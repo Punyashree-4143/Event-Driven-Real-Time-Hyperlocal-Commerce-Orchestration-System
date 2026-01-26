@@ -10,7 +10,7 @@ const Login = () => {
 
     try {
       const res = await fetch(
-        "http://localhost:5001/api/auth/login",
+        `${import.meta.env.VITE_API_URL}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -25,7 +25,7 @@ const Login = () => {
         return;
       }
 
-      // 🚫 BLOCK CUSTOMERS
+      // 🚫 BLOCK NON-VENDORS
       if (data.role !== "vendor") {
         alert("Access denied. Vendor only.");
         return;
@@ -34,7 +34,7 @@ const Login = () => {
       // ✅ SAVE VENDOR TOKEN
       localStorage.setItem("vendorToken", data.token);
 
-      // 🔥 HARD RELOAD so StoreContext re-fetches
+      // 🔥 FORCE REFRESH
       window.location.href = "/";
     } catch (error) {
       console.error("LOGIN ERROR:", error);
