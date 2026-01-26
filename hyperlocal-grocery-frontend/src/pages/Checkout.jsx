@@ -6,6 +6,11 @@ function Checkout() {
   const navigate = useNavigate();
 
   // =====================
+  // API BASE
+  // =====================
+  const API_BASE = import.meta.env.VITE_API_URL;
+
+  // =====================
   // CART
   // =====================
   const cart = getCart() || [];
@@ -86,7 +91,7 @@ function Checkout() {
     }
 
     try {
-      const res = await fetch("http://localhost:5001/api/orders", {
+      const res = await fetch(`${API_BASE}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

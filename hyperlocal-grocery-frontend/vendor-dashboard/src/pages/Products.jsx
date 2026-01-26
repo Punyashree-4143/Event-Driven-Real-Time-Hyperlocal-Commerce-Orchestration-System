@@ -15,6 +15,7 @@ const Products = () => {
   const [image, setImage] = useState("");
 
   const token = localStorage.getItem("vendorToken");
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   // 🔄 Fetch products
   const fetchProducts = async () => {
@@ -22,7 +23,7 @@ const Products = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5001/api/products/${store._id}`
+        `${API_BASE}/products/${store._id}`
       );
       const data = await res.json();
       setProducts(data.products || []);
@@ -42,23 +43,27 @@ const Products = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5001/api/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          price,
-          category,
-          stock,
-          image, // 🖼 IMAGE URL
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE}/products`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name,
+            price: Number(price),
+            category,
+            stock: Number(stock),
+            image, // 🖼 IMAGE URL
+          }),
+        }
+      );
 
       if (!res.ok) {
-        alert("Failed to add product");
+        const data = await res.json();
+        alert(data.message || "Failed to add product");
         return;
       }
 
@@ -100,7 +105,7 @@ const Products = () => {
 
         <input
           type="number"
-          placeholder="Price (₹)"
+          placeholder="Price (₹ / kg)"
           className="w-full p-2 border rounded"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
@@ -116,7 +121,7 @@ const Products = () => {
 
         <input
           type="number"
-          placeholder="Stock"
+          placeholder="Stock (kg)"
           className="w-full p-2 border rounded"
           value={stock}
           onChange={(e) => setStock(e.target.value)}

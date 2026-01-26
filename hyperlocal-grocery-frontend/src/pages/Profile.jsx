@@ -7,17 +7,23 @@ function Profile() {
   const navigate = useNavigate();
   const userToken = localStorage.getItem("userToken");
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const fetchOrders = async () => {
-    const res = await fetch(
-      "http://localhost:5001/api/orders/my",
-      {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      }
-    );
-    const data = await res.json();
-    if (res.ok) setOrders(data.orders || []);
+    try {
+      const res = await fetch(
+        `${API_BASE}/orders/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+      const data = await res.json();
+      if (res.ok) setOrders(data.orders || []);
+    } catch (err) {
+      console.error("FETCH PROFILE ORDERS ERROR:", err);
+    }
   };
 
   useEffect(() => {
@@ -29,38 +35,43 @@ function Profile() {
      REORDER
      ===================== */
   const reorder = async (order) => {
-    const res = await fetch(
-      `http://localhost:5001/api/orders/${order._id}/reorder-check`,
-      {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-
-    if (!data.canReorder) {
-      alert(
-        `Out of stock: ${data.unavailableItems.join(", ")}`
+    try {
+      const res = await fetch(
+        `${API_BASE}/orders/${order._id}/reorder-check`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
       );
-      return;
+
+      const data = await res.json();
+
+      if (!data.canReorder) {
+        alert(
+          `Out of stock: ${data.unavailableItems.join(", ")}`
+        );
+        return;
+      }
+
+      localStorage.setItem(
+        "cart",
+        JSON.stringify(
+          order.items.map((i) => ({
+            _id: i.productId,
+            name: i.name,
+            price: i.price,
+            qty: i.qty,
+            storeId: order.storeId,
+          }))
+        )
+      );
+
+      navigate("/cart");
+    } catch (err) {
+      console.error("REORDER ERROR:", err);
+      alert("Failed to reorder");
     }
-
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(
-        order.items.map((i) => ({
-          _id: i.productId,
-          name: i.name,
-          price: i.price,
-          qty: i.qty,
-          storeId: order.storeId,
-        }))
-      )
-    );
-
-    navigate("/cart");
   };
 
   /* =====================
@@ -69,27 +80,32 @@ function Profile() {
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Cancel this order?")) return;
 
-    const res = await fetch(
-      `http://localhost:5001/api/orders/${orderId}/cancel`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${API_BASE}/orders/${orderId}/cancel`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
 
-    const data = await res.json();
-    if (res.ok) {
-      alert("Order cancelled");
-      fetchOrders();
-    } else {
-      alert(data.message);
+      const data = await res.json();
+      if (res.ok) {
+        alert("Order cancelled");
+        fetchOrders();
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("CANCEL ORDER ERROR:", err);
+      alert("Failed to cancel order");
     }
   };
 
   /* =====================
-     STATUS RESOLVER (FIX)
+     STATUS RESOLVER
      ===================== */
   const getCustomerStatus = (order) => {
     if (order.deliveryStatus === "Delivered") {

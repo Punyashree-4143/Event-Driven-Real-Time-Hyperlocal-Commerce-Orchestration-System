@@ -17,6 +17,8 @@ const Stores = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const cached = localStorage.getItem("userLocation");
 
@@ -39,15 +41,19 @@ const Stores = () => {
   }, [selectedCategory]);
 
   const fetchStores = async (lat, lng, category) => {
-    let url = `http://localhost:5001/api/stores/nearby?lat=${lat}&lng=${lng}`;
+    try {
+      let url = `${API_BASE}/stores/nearby?lat=${lat}&lng=${lng}`;
 
-    if (category && category !== "All") {
-      url += `&category=${encodeURIComponent(category)}`;
+      if (category && category !== "All") {
+        url += `&category=${encodeURIComponent(category)}`;
+      }
+
+      const res = await fetch(url);
+      const data = await res.json();
+      setStores(data.stores || []);
+    } catch (err) {
+      console.error("FETCH STORES ERROR:", err);
     }
-
-    const res = await fetch(url);
-    const data = await res.json();
-    setStores(data.stores || []);
   };
 
   const filteredStores = stores.filter((store) =>

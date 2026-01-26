@@ -13,12 +13,13 @@ const AddProduct = () => {
   const [image, setImage] = useState("");
 
   const token = localStorage.getItem("vendorToken");
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5001/api/products", {
+      const res = await fetch(`${API_BASE}/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,6 +43,7 @@ const AddProduct = () => {
 
       navigate("/products/list", { replace: true });
     } catch (err) {
+      console.error("ADD PRODUCT ERROR:", err);
       alert("Server error");
     }
   };

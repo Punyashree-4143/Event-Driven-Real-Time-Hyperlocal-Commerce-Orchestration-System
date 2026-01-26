@@ -6,17 +6,24 @@ function OrderHistory() {
   const navigate = useNavigate();
   const userToken = localStorage.getItem("userToken");
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const fetchOrders = async () => {
-    const res = await fetch(
-      "http://localhost:5001/api/orders/my",
-      {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      }
-    );
-    const data = await res.json();
-    if (res.ok) setOrders(data.orders || []);
+    try {
+      const res = await fetch(
+        `${API_BASE}/orders/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) setOrders(data.orders || []);
+    } catch (err) {
+      console.error("FETCH ORDERS ERROR:", err);
+    }
   };
 
   useEffect(() => {
@@ -48,27 +55,33 @@ function OrderHistory() {
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Cancel this order?")) return;
 
-    const res = await fetch(
-      `http://localhost:5001/api/orders/${orderId}/cancel`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${API_BASE}/orders/${orderId}/cancel`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
 
-    const data = await res.json();
-    if (res.ok) {
-      alert("Order cancelled");
-      fetchOrders();
-    } else {
-      alert(data.message);
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Order cancelled");
+        fetchOrders();
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("CANCEL ORDER ERROR:", err);
+      alert("Failed to cancel order");
     }
   };
 
   /* =====================
-     STATUS RESOLVER (FIX)
+     STATUS RESOLVER
      ===================== */
   const getOrderStatus = (order) => {
     if (order.deliveryStatus === "Delivered") {

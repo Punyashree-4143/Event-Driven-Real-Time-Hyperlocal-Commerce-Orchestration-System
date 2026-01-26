@@ -12,7 +12,7 @@ const Register = () => {
 
     try {
       const res = await fetch(
-        "http://localhost:5001/api/auth/vendor/register",
+        `${import.meta.env.VITE_API_URL}/auth/vendor/register`,
         {
           method: "POST",
           headers: {
@@ -36,6 +36,7 @@ const Register = () => {
       alert("Registration successful. Please login.");
       navigate("/login");
     } catch (err) {
+      console.error("REGISTER ERROR:", err);
       alert("Server error");
     }
   };

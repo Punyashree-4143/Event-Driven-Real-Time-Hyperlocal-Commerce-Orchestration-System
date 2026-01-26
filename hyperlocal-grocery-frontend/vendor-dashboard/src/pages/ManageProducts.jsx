@@ -5,6 +5,7 @@ const ManageProducts = () => {
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("vendorToken");
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   // =====================
   // FETCH PRODUCTS
@@ -12,7 +13,7 @@ const ManageProducts = () => {
   const fetchProducts = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5001/api/products/vendor/all",
+        `${API_BASE}/products/vendor/all`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -45,7 +46,7 @@ const ManageProducts = () => {
   const updateProduct = async (id, updates) => {
     try {
       const res = await fetch(
-        `http://localhost:5001/api/products/${id}`,
+        `${API_BASE}/products/${id}`,
         {
           method: "PUT",
           headers: {
@@ -75,7 +76,7 @@ const ManageProducts = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5001/api/products/${id}`,
+        `${API_BASE}/products/${id}`,
         {
           method: "DELETE",
           headers: {

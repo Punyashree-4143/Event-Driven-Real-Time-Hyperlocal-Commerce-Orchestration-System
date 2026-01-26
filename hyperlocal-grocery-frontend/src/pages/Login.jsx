@@ -20,11 +20,14 @@ function Login() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await res.json();
 
@@ -47,7 +50,7 @@ function Login() {
         _id: data._id,
         name: data.name,
         email: data.email,
-        role: data.role, // customer OR admin
+        role: data.role,
       });
 
       alert("Login successful");
@@ -90,7 +93,6 @@ function Login() {
         <button type="submit">Login</button>
       </form>
 
-      {/* CUSTOMER REGISTER */}
       <p className="auth-link">
         Don’t have an account?{" "}
         <span onClick={() => navigate("/register")}>
@@ -98,7 +100,6 @@ function Login() {
         </span>
       </p>
 
-      {/* 🔐 ADMIN LOGIN LINK */}
       <p className="auth-link">
         Are you an admin?{" "}
         <span

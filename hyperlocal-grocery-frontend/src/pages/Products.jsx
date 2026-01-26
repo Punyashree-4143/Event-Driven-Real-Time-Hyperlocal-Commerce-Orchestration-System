@@ -4,8 +4,12 @@ import { getProductsByStore } from "../services/api";
 import { addToCart } from "../utils/cart";
 import { io } from "socket.io-client";
 
+// 🔑 API & SOCKET BASE
+const API_BASE = import.meta.env.VITE_API_URL;
+const SOCKET_BASE = API_BASE.replace("/api", "");
+
 // 🔌 SOCKET (single instance)
-const socket = io("http://localhost:5001");
+const socket = io(SOCKET_BASE);
 
 function Products() {
   const { storeId } = useParams();

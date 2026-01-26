@@ -7,18 +7,20 @@ const ProductsList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     if (!store) return;
 
     const fetchProducts = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5001/api/products/${store._id}`
+          `${API_BASE}/products/${store._id}`
         );
         const data = await res.json();
         setProducts(data.products || []);
       } catch (err) {
-        console.error(err);
+        console.error("FETCH PRODUCTS ERROR:", err);
       } finally {
         setLoading(false);
       }
@@ -66,6 +68,10 @@ const ProductsList = () => {
                         src={p.image}
                         alt={p.name}
                         className="w-12 h-12 object-cover rounded"
+                        onError={(e) =>
+                          (e.target.src =
+                            "https://via.placeholder.com/48")
+                        }
                       />
                     ) : (
                       "—"

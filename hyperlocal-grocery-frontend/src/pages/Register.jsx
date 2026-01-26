@@ -4,6 +4,9 @@ import "../styles/auth.css";
 
 function Register() {
   const navigate = useNavigate();
+
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,11 +21,14 @@ function Register() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5001/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(
+        `${API_BASE}/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await res.json();
 
@@ -34,6 +40,7 @@ function Register() {
       alert("Registration successful! Please login.");
       navigate("/login");
     } catch (err) {
+      console.error("REGISTER ERROR:", err);
       alert("Something went wrong");
     }
   };
@@ -75,7 +82,9 @@ function Register() {
 
       <p className="auth-link">
         Already have an account?{" "}
-        <span onClick={() => navigate("/login")}>Login</span>
+        <span onClick={() => navigate("/login")}>
+          Login
+        </span>
       </p>
     </div>
   );

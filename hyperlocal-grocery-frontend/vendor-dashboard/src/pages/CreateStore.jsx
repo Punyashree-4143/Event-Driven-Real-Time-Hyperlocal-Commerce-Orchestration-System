@@ -14,6 +14,7 @@ const CreateStore = () => {
   const [deliveryRadius, setDeliveryRadius] = useState(5);
 
   const token = localStorage.getItem("vendorToken");
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   // 🔄 WAIT FOR STORE TO LOAD
   if (loading) {
@@ -85,7 +86,7 @@ const CreateStore = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:5001/api/stores", {
+      const res = await fetch(`${API_BASE}/stores`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,6 +113,7 @@ const CreateStore = () => {
       await refetchStore();
       navigate("/");
     } catch (error) {
+      console.error("CREATE STORE ERROR:", error);
       alert("Server error");
     }
   };

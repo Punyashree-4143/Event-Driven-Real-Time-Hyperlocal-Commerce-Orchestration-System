@@ -6,6 +6,8 @@ export const StoreProvider = ({ children }) => {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const fetchStore = async () => {
     const token = localStorage.getItem("vendorToken"); // ✅ CORRECT
 
@@ -19,7 +21,7 @@ export const StoreProvider = ({ children }) => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5001/api/stores/my",
+        `${API_BASE}/stores/my`,
         {
           headers: {
             Authorization: `Bearer ${token}`, // ✅ STRING TOKEN

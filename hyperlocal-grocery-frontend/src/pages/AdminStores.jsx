@@ -5,6 +5,8 @@ function AdminStores() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   // =========================
   // FETCH ALL STORES (ADMIN)
   // =========================
@@ -19,7 +21,7 @@ function AdminStores() {
       }
 
       const res = await fetch(
-        "http://localhost:5001/api/admin/stores",
+        `${API_BASE}/admin/stores`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -50,7 +52,7 @@ function AdminStores() {
       const token = localStorage.getItem("userToken");
 
       const res = await fetch(
-        `http://localhost:5001/api/admin/stores/${storeId}/status`,
+        `${API_BASE}/admin/stores/${storeId}/status`,
         {
           method: "PUT",
           headers: {

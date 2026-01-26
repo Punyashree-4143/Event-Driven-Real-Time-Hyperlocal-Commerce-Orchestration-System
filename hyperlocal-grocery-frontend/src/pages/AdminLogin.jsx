@@ -18,36 +18,44 @@ function AdminLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch("http://localhost:5001/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.message || "Login failed");
-      return;
+      if (!res.ok) {
+        alert(data.message || "Login failed");
+        return;
+      }
+
+      // 🔒 STRICT ADMIN CHECK
+      if (data.role !== "admin") {
+        alert("Admin access only");
+        return;
+      }
+
+      // ✅ LOGIN ADMIN
+      login({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+      });
+
+      localStorage.setItem("userToken", data.token);
+
+      navigate("/admin/stores");
+    } catch (err) {
+      console.error("ADMIN LOGIN ERROR:", err);
+      alert("Server error");
     }
-
-    // 🔒 STRICT ADMIN CHECK
-    if (data.role !== "admin") {
-      alert("Admin access only");
-      return;
-    }
-
-    // ✅ LOGIN ADMIN
-    login({
-      _id: data._id,
-      name: data.name,
-      email: data.email,
-      role: data.role,
-    });
-
-    localStorage.setItem("userToken", data.token);
-
-    navigate("/admin/stores");
   };
 
   return (

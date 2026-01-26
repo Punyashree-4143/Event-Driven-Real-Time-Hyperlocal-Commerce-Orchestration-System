@@ -8,11 +8,13 @@ function Tracking() {
   const [order, setOrder] = useState(null);
   const userToken = localStorage.getItem("userToken");
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5001/api/orders/${orderId}`,
+          `${API_BASE}/orders/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${userToken}`,

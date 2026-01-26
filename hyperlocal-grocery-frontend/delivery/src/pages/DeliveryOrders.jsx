@@ -2,8 +2,12 @@ import { useEffect, useState, useContext } from "react";
 import { DeliveryAuthContext } from "../context/DeliveryAuthContext";
 import { io } from "socket.io-client";
 
+// 🔑 Backend base URLs
+const API_BASE = import.meta.env.VITE_API_URL;
+const SOCKET_BASE = API_BASE.replace("/api", "");
+
 // 🔌 Socket instance (delivery only)
-const socket = io("http://localhost:5001", {
+const socket = io(SOCKET_BASE, {
   autoConnect: false,
 });
 
@@ -16,7 +20,7 @@ function DeliveryOrders() {
   // FETCH DELIVERY ORDERS
   // =====================
   const fetchOrders = async () => {
-    const res = await fetch("http://localhost:5001/api/delivery/orders", {
+    const res = await fetch(`${API_BASE}/delivery/orders`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -54,13 +58,10 @@ function DeliveryOrders() {
   // ACCEPT ORDER
   // =====================
   const acceptOrder = async (orderId) => {
-    await fetch(
-      `http://localhost:5001/api/delivery/orders/${orderId}/accept`,
-      {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    await fetch(`${API_BASE}/delivery/orders/${orderId}/accept`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     fetchOrders();
   };
 
@@ -68,17 +69,14 @@ function DeliveryOrders() {
   // UPDATE STATUS
   // =====================
   const updateStatus = async (orderId, deliveryStatus) => {
-    await fetch(
-      `http://localhost:5001/api/delivery/orders/${orderId}/status`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ deliveryStatus }),
-      }
-    );
+    await fetch(`${API_BASE}/delivery/orders/${orderId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ deliveryStatus }),
+    });
     fetchOrders();
   };
 
