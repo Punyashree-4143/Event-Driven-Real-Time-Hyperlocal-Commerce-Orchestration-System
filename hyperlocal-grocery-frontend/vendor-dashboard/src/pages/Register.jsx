@@ -13,23 +13,25 @@ const Register = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role: "vendor", // ✅ IMPORTANT
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/auth/vendor/register`, // ✅ CORRECT ENDPOINT
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+          }),
+        }
+      );
+
+      const data = await res.json();
 
       if (!res.ok) {
-        const text = await res.text();
-        console.error("REGISTER ERROR:", text);
-        alert("Registration failed");
+        alert(data.message || "Registration failed");
         return;
       }
 
