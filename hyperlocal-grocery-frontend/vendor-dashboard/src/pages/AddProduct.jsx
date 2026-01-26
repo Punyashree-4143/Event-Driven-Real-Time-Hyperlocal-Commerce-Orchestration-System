@@ -19,7 +19,7 @@ const AddProduct = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${API_BASE}/products`, {
+      const res = await fetch(`${API_BASE}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -27,17 +27,17 @@ const AddProduct = () => {
         },
         body: JSON.stringify({
           name,
-          price: Number(pricePerKg), // ✅ price per kg
+          price: Number(pricePerKg),
           category,
-          stock: Number(stock), // total available stock
+          stock: Number(stock),
           image,
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        alert(data.message || "Failed to add product");
+        const text = await res.text();
+        console.error("ADD PRODUCT ERROR:", text);
+        alert("Failed to add product");
         return;
       }
 
@@ -57,7 +57,6 @@ const AddProduct = () => {
       <h1 className="text-2xl font-bold mb-6">Add Product</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Product Name */}
         <input
           placeholder="Product Name"
           className="w-full p-2 border rounded"
@@ -66,7 +65,6 @@ const AddProduct = () => {
           required
         />
 
-        {/* Price per kg */}
         <div className="flex items-center border rounded">
           <input
             type="number"
@@ -81,7 +79,6 @@ const AddProduct = () => {
           </span>
         </div>
 
-        {/* Category */}
         <input
           placeholder="Category"
           className="w-full p-2 border rounded"
@@ -89,7 +86,6 @@ const AddProduct = () => {
           onChange={(e) => setCategory(e.target.value)}
         />
 
-        {/* Total stock */}
         <input
           type="number"
           placeholder="Total Stock (kg)"
@@ -99,7 +95,6 @@ const AddProduct = () => {
           required
         />
 
-        {/* Image */}
         <input
           placeholder="Image URL"
           className="w-full p-2 border rounded"
@@ -112,6 +107,9 @@ const AddProduct = () => {
             src={image}
             alt="Preview"
             className="w-24 h-24 object-cover rounded"
+            onError={(e) =>
+              (e.target.src = "https://via.placeholder.com/96")
+            }
           />
         )}
 
