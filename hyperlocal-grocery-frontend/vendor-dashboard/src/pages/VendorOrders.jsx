@@ -42,8 +42,12 @@ function VendorOrders() {
         }
       );
 
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const data = await res.json();
-      if (res.ok) setOrders(data.orders || []);
+      setOrders(data.orders || []);
     } catch (err) {
       console.error("❌ Vendor fetch error:", err.message);
     } finally {
@@ -64,12 +68,19 @@ function VendorOrders() {
       if (joinedStoreRef.current) return;
 
       try {
+        // ✅ CORRECT API (THIS WAS THE BUG)
         const res = await fetch(
-          `${API_BASE_URL}/api/stores/my-store`,
+          `${API_BASE_URL}/api/stores/my`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
 
         const data = await res.json();
 
@@ -116,7 +127,11 @@ function VendorOrders() {
         }
       );
 
-      if (res.ok) fetchOrders();
+      if (!res.ok) {
+        throw new Error("Update failed");
+      }
+
+      fetchOrders();
     } catch (err) {
       console.error("❌ Status update error:", err.message);
     } finally {
@@ -185,7 +200,7 @@ function VendorOrders() {
         <button
           disabled={updatingId === order._id}
           onClick={() => updateStatus(order._id, "Packed")}
-          className="w-full py-2 rounded-lg bg-black text-white font-semibold"
+          className="w-full py-2 rounded-lg bg-black text-white font-semibold hover:bg-gray-900"
         >
           {updatingId === order._id ? "Updating..." : "Mark as Packed"}
         </button>
