@@ -7,13 +7,13 @@ const ManageProducts = () => {
   const token = localStorage.getItem("vendorToken");
   const API_BASE = import.meta.env.VITE_API_URL;
 
-  // =====================
-  // FETCH PRODUCTS
-  // =====================
+  /* =====================
+     FETCH PRODUCTS
+     ===================== */
   const fetchProducts = async () => {
     try {
       const res = await fetch(
-        `${API_BASE}/products/vendor/all`,
+        `${API_BASE}/api/products/vendor/all`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -22,14 +22,13 @@ const ManageProducts = () => {
       );
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       const data = await res.json();
       setProducts(data.products || []);
     } catch (err) {
-      console.error(err.message);
+      console.error("FETCH PRODUCTS ERROR:", err);
       alert("Failed to load products");
     } finally {
       setLoading(false);
@@ -40,13 +39,13 @@ const ManageProducts = () => {
     fetchProducts();
   }, []);
 
-  // =====================
-  // UPDATE PRODUCT
-  // =====================
+  /* =====================
+     UPDATE PRODUCT
+     ===================== */
   const updateProduct = async (id, updates) => {
     try {
       const res = await fetch(
-        `${API_BASE}/products/${id}`,
+        `${API_BASE}/api/products/${id}`,
         {
           method: "PUT",
           headers: {
@@ -58,25 +57,24 @@ const ManageProducts = () => {
       );
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       fetchProducts();
     } catch (err) {
-      alert(err.message);
+      alert("Failed to update product");
     }
   };
 
-  // =====================
-  // DELETE PRODUCT
-  // =====================
+  /* =====================
+     DELETE PRODUCT
+     ===================== */
   const deleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return;
 
     try {
       const res = await fetch(
-        `${API_BASE}/products/${id}`,
+        `${API_BASE}/api/products/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -86,13 +84,12 @@ const ManageProducts = () => {
       );
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       fetchProducts();
     } catch (err) {
-      alert(err.message);
+      alert("Failed to delete product");
     }
   };
 
@@ -121,36 +118,22 @@ const ManageProducts = () => {
           <tbody>
             {products.map((p) => (
               <tr key={p._id}>
-                {/* IMAGE EDIT */}
+                {/* IMAGE */}
                 <td className="border p-2">
-                  <div className="space-y-2">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="w-14 h-14 object-cover rounded"
-                      onError={(e) =>
-                        (e.target.src =
-                          "https://via.placeholder.com/60")
-                      }
-                    />
-
-                    <input
-                      type="text"
-                      placeholder="Image URL"
-                      className="w-32 border p-1 text-xs"
-                      defaultValue={p.image}
-                      onBlur={(e) =>
-                        updateProduct(p._id, {
-                          image: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-14 h-14 object-cover rounded"
+                    onError={(e) =>
+                      (e.target.src =
+                        "https://via.placeholder.com/60")
+                    }
+                  />
                 </td>
 
                 <td className="border p-2">{p.name}</td>
 
-                {/* PRICE UPDATE */}
+                {/* PRICE */}
                 <td className="border p-2">
                   <input
                     type="number"
@@ -164,7 +147,7 @@ const ManageProducts = () => {
                   />
                 </td>
 
-                {/* STOCK CONTROL */}
+                {/* STOCK */}
                 <td className="border p-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -193,7 +176,7 @@ const ManageProducts = () => {
                 <td className="border p-2">{p.category || "—"}</td>
 
                 <td className="border p-2">
-                  {p.isAvailable ? (
+                  {p.stock > 0 ? (
                     <span className="text-green-600 font-semibold">
                       Yes
                     </span>
