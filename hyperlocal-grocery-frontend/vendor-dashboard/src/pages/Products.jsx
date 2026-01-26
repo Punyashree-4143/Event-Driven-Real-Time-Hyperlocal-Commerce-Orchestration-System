@@ -17,18 +17,25 @@ const Products = () => {
   const token = localStorage.getItem("vendorToken");
   const API_BASE = import.meta.env.VITE_API_URL;
 
-  // 🔄 Fetch products
+  /* =====================
+     FETCH PRODUCTS
+     ===================== */
   const fetchProducts = async () => {
     if (!store) return;
 
     try {
       const res = await fetch(
-        `${API_BASE}/products/${store._id}`
+        `${API_BASE}/api/products/${store._id}`
       );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch products");
+      }
+
       const data = await res.json();
       setProducts(data.products || []);
     } catch (error) {
-      console.error("Failed to fetch products", error);
+      console.error("FETCH PRODUCTS ERROR:", error);
     } finally {
       setLoading(false);
     }
@@ -38,13 +45,15 @@ const Products = () => {
     fetchProducts();
   }, [store]);
 
-  // ➕ Add product
+  /* =====================
+     ADD PRODUCT
+     ===================== */
   const handleAddProduct = async (e) => {
     e.preventDefault();
 
     try {
       const res = await fetch(
-        `${API_BASE}/products`,
+        `${API_BASE}/api/products`,
         {
           method: "POST",
           headers: {
@@ -56,25 +65,25 @@ const Products = () => {
             price: Number(price),
             category,
             stock: Number(stock),
-            image, // 🖼 IMAGE URL
+            image,
           }),
         }
       );
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         alert(data.message || "Failed to add product");
         return;
       }
 
-      // Reset form
+      // reset form
       setName("");
       setPrice("");
       setCategory("");
       setStock("");
       setImage("");
 
-      // Refresh products
       fetchProducts();
     } catch (error) {
       alert("Server error");
@@ -128,7 +137,6 @@ const Products = () => {
           required
         />
 
-        {/* 🖼 IMAGE URL */}
         <input
           placeholder="Image URL"
           className="w-full p-2 border rounded"
@@ -136,12 +144,14 @@ const Products = () => {
           onChange={(e) => setImage(e.target.value)}
         />
 
-        {/* IMAGE PREVIEW */}
         {image && (
           <img
             src={image}
             alt="Preview"
             className="w-24 h-24 object-cover rounded border"
+            onError={(e) =>
+              (e.target.src = "https://via.placeholder.com/96")
+            }
           />
         )}
 
@@ -174,6 +184,10 @@ const Products = () => {
                         src={p.image}
                         alt={p.name}
                         className="w-12 h-12 object-cover rounded"
+                        onError={(e) =>
+                          (e.target.src =
+                            "https://via.placeholder.com/48")
+                        }
                       />
                     ) : (
                       <span className="text-gray-400">No image</span>

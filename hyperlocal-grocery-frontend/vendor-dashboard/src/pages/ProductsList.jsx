@@ -15,8 +15,13 @@ const ProductsList = () => {
     const fetchProducts = async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/products/${store._id}`
+          `${API_BASE}/api/products/${store._id}`
         );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
         const data = await res.json();
         setProducts(data.products || []);
       } catch (err) {
