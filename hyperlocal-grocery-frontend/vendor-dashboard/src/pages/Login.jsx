@@ -10,7 +10,7 @@ const Login = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
+        `${import.meta.env.VITE_API_URL}/api/auth/login`, // ✅ FIX
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -18,12 +18,12 @@ const Login = () => {
         }
       );
 
-      const data = await res.json();
-
       if (!res.ok) {
-        alert(data.message || "Login failed");
-        return;
+        const text = await res.text();
+        throw new Error(text);
       }
+
+      const data = await res.json();
 
       // 🚫 BLOCK NON-VENDORS
       if (data.role !== "vendor") {
@@ -31,14 +31,13 @@ const Login = () => {
         return;
       }
 
-      // ✅ SAVE VENDOR TOKEN
+      // ✅ SAVE TOKEN
       localStorage.setItem("vendorToken", data.token);
 
-      // 🔥 FORCE REFRESH
       window.location.href = "/";
     } catch (error) {
       console.error("LOGIN ERROR:", error);
-      alert("Server error");
+      alert("Login failed");
     }
   };
 

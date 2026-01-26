@@ -9,7 +9,7 @@ export const StoreProvider = ({ children }) => {
   const API_BASE = import.meta.env.VITE_API_URL;
 
   const fetchStore = async () => {
-    const token = localStorage.getItem("vendorToken"); // ✅ CORRECT
+    const token = localStorage.getItem("vendorToken");
 
     if (!token) {
       setStore(null);
@@ -21,31 +21,28 @@ export const StoreProvider = ({ children }) => {
       setLoading(true);
 
       const res = await fetch(
-        `${API_BASE}/stores/my`,
+        `${API_BASE}/api/stores/my`, // ✅ FIX
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ STRING TOKEN
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
       if (!res.ok) {
-        console.error("STORE FETCH FAILED:", res.status);
-        setStore(null);
-        return;
+        throw new Error(`HTTP ${res.status}`);
       }
 
       const data = await res.json();
       setStore(data.store || null);
     } catch (err) {
-      console.error("STORE FETCH ERROR:", err);
+      console.error("STORE FETCH ERROR:", err.message);
       setStore(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔥 fetch immediately after login / refresh
   useEffect(() => {
     fetchStore();
   }, []);
