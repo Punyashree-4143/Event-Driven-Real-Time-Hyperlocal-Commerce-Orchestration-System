@@ -1,18 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config"; // adjust path if needed
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/products') // Replace with your backend URL
-      .then((res) => res.json())
+    fetch(`${API_BASE_URL}/products`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch products");
+        return res.json();
+      })
       .then((data) => {
         setProducts(data);
-        setLoading(false);
       })
       .catch((err) => {
-        console.error('Error fetching products:', err);
+        console.error("Error fetching products:", err);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -22,14 +27,18 @@ export default function ProductList() {
   return (
     <div>
       <h2>Available Products</h2>
-      {products.length === 0 && <p>No products found.</p>}
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>
-            {p.name} — ${p.price.toFixed(2)}
-          </li>
-        ))}
-      </ul>
+
+      {products.length === 0 ? (
+        <p>No products found.</p>
+      ) : (
+        <ul>
+          {products.map((p) => (
+            <li key={p.id}>
+              {p.name} — ${Number(p.price).toFixed(2)}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
