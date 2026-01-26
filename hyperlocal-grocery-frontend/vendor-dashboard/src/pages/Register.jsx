@@ -7,33 +7,33 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  const API_BASE = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/vendor/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-          }),
-        }
-      );
-
-      const data = await res.json();
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: "vendor", // ✅ IMPORTANT
+        }),
+      });
 
       if (!res.ok) {
-        alert(data.message || "Registration failed");
+        const text = await res.text();
+        console.error("REGISTER ERROR:", text);
+        alert("Registration failed");
         return;
       }
 
-      alert("Registration successful. Please login.");
+      alert("Vendor registered successfully. Please login.");
       navigate("/login");
     } catch (err) {
       console.error("REGISTER ERROR:", err);
