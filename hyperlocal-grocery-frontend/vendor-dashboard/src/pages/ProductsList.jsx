@@ -1,13 +1,14 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { StoreContext } from "../context/StoreContext";
+import { API_BASE_URL } from "../config/api";
 
 const ProductsList = () => {
   const { store } = useContext(StoreContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   useEffect(() => {
     if (!store) return;
@@ -15,7 +16,7 @@ const ProductsList = () => {
     const fetchProducts = async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/api/products/${store._id}`
+          `${API_BASE}/products/${store._id}`
         );
 
         if (!res.ok) {

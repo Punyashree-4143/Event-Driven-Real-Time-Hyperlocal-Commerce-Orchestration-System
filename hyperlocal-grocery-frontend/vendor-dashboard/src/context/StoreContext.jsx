@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from "react";
+import { API_BASE_URL } from "../config/api";
 
 export const StoreContext = createContext(null);
 
@@ -6,7 +7,7 @@ export const StoreProvider = ({ children }) => {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   const fetchStore = async () => {
     const token = localStorage.getItem("vendorToken");
@@ -21,7 +22,7 @@ export const StoreProvider = ({ children }) => {
       setLoading(true);
 
       const res = await fetch(
-        `${API_BASE}/api/stores/my`, // ✅ FIX
+        `${API_BASE}/stores/my`, // ✅ FIX
         {
           headers: {
             Authorization: `Bearer ${token}`,

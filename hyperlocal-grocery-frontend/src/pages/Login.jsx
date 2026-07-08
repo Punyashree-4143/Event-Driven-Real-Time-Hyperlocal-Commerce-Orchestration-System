@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { apiFetch } from "../config/api";
 import "../styles/auth.css";
 
 function Login() {
@@ -20,21 +21,11 @@ function Login() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Invalid credentials");
-        return;
-      }
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
       // 🚫 BLOCK VENDORS ONLY
       if (data.role === "vendor") {
@@ -63,7 +54,7 @@ function Login() {
       }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
-      alert("Something went wrong");
+      alert(err.message || "Something went wrong");
     }
   };
 

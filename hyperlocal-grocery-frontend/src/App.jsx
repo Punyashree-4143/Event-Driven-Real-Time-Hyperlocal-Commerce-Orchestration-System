@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Stores from "./pages/Stores";
 import Products from "./pages/Products";
+import CategoryPage from "./pages/CategoryPage";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Tracking from "./pages/Tracking";
@@ -38,6 +39,7 @@ function App() {
         {/* CUSTOMER */}
         <Route path="/stores" element={<Stores />} />
         <Route path="/store/:storeId" element={<Products />} />
+        <Route path="/category/:category" element={<CategoryPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/tracking/:orderId" element={<Tracking />} />

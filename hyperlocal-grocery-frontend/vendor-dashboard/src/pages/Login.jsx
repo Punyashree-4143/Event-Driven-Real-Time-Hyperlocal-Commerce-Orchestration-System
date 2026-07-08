@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../config/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -9,21 +10,11 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`, // ✅ FIX
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text);
-      }
-
-      const data = await res.json();
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       // 🚫 BLOCK NON-VENDORS
       if (data.role !== "vendor") {
@@ -37,7 +28,7 @@ const Login = () => {
       window.location.href = "/";
     } catch (error) {
       console.error("LOGIN ERROR:", error);
-      alert("Login failed");
+      alert(error.message || "Login failed");
     }
   };
 

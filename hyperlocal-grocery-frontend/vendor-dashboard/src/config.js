@@ -1,7 +1,1 @@
-// src/config.js
-
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001";
-
-export const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || API_BASE_URL;
+export { API_BASE_URL, API_ORIGIN, SOCKET_URL, apiFetch, parseApiResponse } from "./config/api";

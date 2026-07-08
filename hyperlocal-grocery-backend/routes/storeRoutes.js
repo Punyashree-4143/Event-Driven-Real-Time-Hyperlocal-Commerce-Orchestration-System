@@ -20,4 +20,29 @@ router.get("/my", shopOnly, async (req, res) => {
   }
 });
 
+// 🌍 USER: GET STORE BY ID
+router.get("/:storeId", async (req, res) => {
+  try {
+    let store = null;
+    const storeId = req.params.storeId;
+    const mongoose = require("mongoose");
+
+    if (mongoose.Types.ObjectId.isValid(storeId)) {
+      store = await Store.findById(storeId);
+    }
+
+    if (!store && mongoose.Types.ObjectId.isValid(storeId)) {
+      store = await Store.findOne({ owner: storeId });
+    }
+
+    if (!store) {
+      return res.status(404).json({ message: "Store not found" });
+    }
+    res.json({ store });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
+

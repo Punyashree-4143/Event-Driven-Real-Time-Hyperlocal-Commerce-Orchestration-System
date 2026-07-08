@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config/api";
 
 function AdminStores() {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   // =========================
   // FETCH ALL STORES (ADMIN)

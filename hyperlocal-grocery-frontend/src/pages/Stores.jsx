@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 const categories = [
   "All",
-  "Fruits",
-  "Vegetables",
+  "Fruits & Vegetables",
+  "Dairy & Breakfast",
+  "Snacks & Beverages",
   "Stationery",
-  "Health & Hygiene",
-  "Grocery",
-  "Snacks",
+  "Household Essentials",
+  "Cleaning Supplies",
+  "Personal Care",
+  "Baby Care",
+  "Pet Care",
+  "Frozen Foods",
+  "Bakery",
+  "Meat & Seafood",
+  "Electronics",
+  "Home & Kitchen",
+  "Others"
 ];
 
 const Stores = () => {
@@ -17,7 +27,11 @@ const Stores = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
+
+  useEffect(() => {
+    localStorage.removeItem("currentStoreId");
+  }, []);
 
   useEffect(() => {
     const cached = localStorage.getItem("userLocation");

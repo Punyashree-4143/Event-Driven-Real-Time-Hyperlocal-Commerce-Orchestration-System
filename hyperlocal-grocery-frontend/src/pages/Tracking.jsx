@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 function Tracking() {
   const { orderId } = useParams();
@@ -8,7 +9,7 @@ function Tracking() {
   const [order, setOrder] = useState(null);
   const userToken = localStorage.getItem("userToken");
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   useEffect(() => {
     const fetchOrder = async () => {

@@ -1,13 +1,13 @@
 import { useEffect, useState, useContext } from "react";
 import { DeliveryAuthContext } from "../context/DeliveryAuthContext";
 import { io } from "socket.io-client";
+import { API_BASE_URL, SOCKET_URL } from "../config/api";
 
 // 🔑 Backend base URLs
-const API_BASE = import.meta.env.VITE_API_URL;
-const SOCKET_BASE = API_BASE.replace("/api", "");
+const API_BASE = API_BASE_URL;
 
 // 🔌 Socket instance (delivery only)
-const socket = io(SOCKET_BASE, {
+const socket = io(SOCKET_URL, {
   autoConnect: false,
 });
 

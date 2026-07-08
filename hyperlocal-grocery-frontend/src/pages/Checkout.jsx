@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 import { getCart } from "../utils/cart";
 
 function Checkout() {
@@ -8,7 +9,7 @@ function Checkout() {
   // =====================
   // API BASE
   // =====================
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   // =====================
   // CART

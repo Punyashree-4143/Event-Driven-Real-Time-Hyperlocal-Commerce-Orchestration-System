@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { StoreContext } from "../context/StoreContext";
 import MapPicker from "../components/MapPicker";
+import { API_BASE_URL } from "../config/api";
 
 const CreateStore = () => {
   const { store, loading, refetchStore } = useContext(StoreContext);
@@ -14,7 +15,7 @@ const CreateStore = () => {
   const [deliveryRadius, setDeliveryRadius] = useState(5);
 
   const token = localStorage.getItem("vendorToken");
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   /* =========================
      LOADING STATE
@@ -94,7 +95,7 @@ const CreateStore = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/stores`, {
+      const res = await fetch(`${API_BASE}/stores`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

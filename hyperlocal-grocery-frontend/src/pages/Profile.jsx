@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 function Profile() {
   const [orders, setOrders] = useState([]);
@@ -7,7 +8,7 @@ function Profile() {
   const navigate = useNavigate();
   const userToken = localStorage.getItem("userToken");
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   const fetchOrders = async () => {
     try {

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../context/StoreContext";
+import { API_BASE_URL } from "../config/api";
 
 const Products = () => {
   const { store } = useContext(StoreContext);
@@ -15,7 +16,7 @@ const Products = () => {
   const [image, setImage] = useState("");
 
   const token = localStorage.getItem("vendorToken");
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
 
   /* =====================
      FETCH PRODUCTS
@@ -25,7 +26,7 @@ const Products = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/api/products/${store._id}`
+        `${API_BASE}/products/${store._id}`
       );
 
       if (!res.ok) {
@@ -53,7 +54,7 @@ const Products = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/api/products`,
+        `${API_BASE}/products`,
         {
           method: "POST",
           headers: {

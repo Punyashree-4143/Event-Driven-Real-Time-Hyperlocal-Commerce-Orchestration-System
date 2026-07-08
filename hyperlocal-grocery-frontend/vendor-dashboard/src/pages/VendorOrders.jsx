@@ -34,7 +34,7 @@ function VendorOrders() {
   const fetchOrders = async () => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/orders/vendor`,
+        `${API_BASE_URL}/orders/vendor`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -70,7 +70,7 @@ function VendorOrders() {
       try {
         // ✅ CORRECT API (THIS WAS THE BUG)
         const res = await fetch(
-          `${API_BASE_URL}/api/stores/my`,
+          `${API_BASE_URL}/stores/my`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -116,7 +116,7 @@ function VendorOrders() {
       setUpdatingId(orderId);
 
       const res = await fetch(
-        `${API_BASE_URL}/api/orders/${orderId}/status`,
+        `${API_BASE_URL}/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: {
