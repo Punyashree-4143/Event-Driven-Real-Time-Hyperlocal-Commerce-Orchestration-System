@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API_BASE_URL } from "../config"; // adjust path if needed
+import { API_BASE_URL } from "./config/api";
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);

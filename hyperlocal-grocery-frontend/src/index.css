@@ -1,3 +1,46 @@
+/* ✍️ PREMIUM TYPOGRAPHY IMPORT */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.01em;
+  background-color: #f9fafb;
+}
+
+/* 🏷️ SCROLLBAR HIDING UTILITIES */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ⚡ MICRO-ANIMATIONS */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom shadow/borders for premium cards */
+.premium-shadow {
+  box-shadow: 0 4px 20px -2px rgba(16, 24, 40, 0.04), 0 2px 8px -1px rgba(16, 24, 40, 0.02);
+}
+
+.border-gray-250 {
+  border-color: rgba(229, 231, 235, 0.7);
+}

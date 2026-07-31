@@ -1,12 +1,12 @@
 // ✅ Use environment variable
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 /* =========================
    STORES
 ========================= */
 export const getNearbyStores = async (lat, lng) => {
   const res = await fetch(
-    `${BASE_URL}/stores/nearby?lat=${lat}&lng=${lng}`
+    `${API_BASE_URL}/stores/nearby?lat=${lat}&lng=${lng}`
   );
 
   if (!res.ok) {
@@ -21,7 +21,7 @@ export const getNearbyStores = async (lat, lng) => {
 ========================= */
 export const getProductsByStore = async (storeId) => {
   const res = await fetch(
-    `${BASE_URL}/products/${storeId}`
+    `${API_BASE_URL}/products/${storeId}`
   );
 
   if (!res.ok) {
@@ -35,12 +35,10 @@ export const getProductsByStore = async (storeId) => {
    AUTH
 ========================= */
 export const loginUser = async (data) => {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
+  return apiFetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(data),
   });
-
-  return res.json();
 };

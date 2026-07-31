@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../config/api";
 import "../styles/auth.css";
 
 function Register() {
   const navigate = useNavigate();
-
-  const API_BASE = import.meta.env.VITE_API_URL;
 
   const [form, setForm] = useState({
     name: "",
@@ -21,27 +20,17 @@ function Register() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${API_BASE}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Registration failed");
-        return;
-      }
+      await apiFetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
       alert("Registration successful! Please login.");
       navigate("/login");
     } catch (err) {
       console.error("REGISTER ERROR:", err);
-      alert("Something went wrong");
+      alert(err.message || "Something went wrong");
     }
   };
 

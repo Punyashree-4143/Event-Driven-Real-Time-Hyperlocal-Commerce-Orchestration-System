@@ -1,6 +1,20 @@
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 
+const isAuthDebugEnabled = () => process.env.AUTH_DEBUG === "true";
+
+const maskSecret = (value) => {
+  if (!value) return null;
+  const text = String(value);
+  if (text.length <= 12) return `${text.slice(0, 3)}...`;
+  return `${text.slice(0, 10)}...${text.slice(-6)}`;
+};
+
+const authDebug = (label, details = {}) => {
+  if (!isAuthDebugEnabled()) return;
+  console.log(`[AUTH DEBUG] ${label}`, details);
+};
+
 // ==============================
 // Register CUSTOMER
 // ==============================
@@ -69,16 +83,42 @@ const registerVendor = async (req, res) => {
 const authUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email?.trim();
 
-    const user = await User.findOne({ email });
+    authDebug("login request received", {
+      emailReceived: email,
+      normalizedEmail,
+      passwordReceived: Boolean(password),
+    });
 
-    if (user && (await user.matchPassword(password))) {
+    const user = await User.findOne({ email: normalizedEmail });
+
+    authDebug("user lookup result", {
+      userFound: Boolean(user),
+      userId: user?._id?.toString(),
+      role: user?.role,
+      storedPasswordHash: maskSecret(user?.password),
+    });
+
+    const passwordMatches = user ? await user.matchPassword(password) : false;
+
+    authDebug("bcrypt compare result", {
+      passwordMatches,
+    });
+
+    if (user && passwordMatches) {
+      const token = generateToken(user._id, user.role);
+
+      authDebug("jwt generated", {
+        token: maskSecret(token),
+      });
+
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id, user.role),
+        token,
       });
     } else {
       res.status(401).json({ message: "Invalid email or password" });

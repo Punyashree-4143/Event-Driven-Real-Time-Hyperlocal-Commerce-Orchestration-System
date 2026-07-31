@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { apiFetch } from "../config/api";
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -19,21 +20,11 @@ function AdminLogin() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Login failed");
-        return;
-      }
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
       // 🔒 STRICT ADMIN CHECK
       if (data.role !== "admin") {
@@ -54,7 +45,7 @@ function AdminLogin() {
       navigate("/admin/stores");
     } catch (err) {
       console.error("ADMIN LOGIN ERROR:", err);
-      alert("Server error");
+      alert(err.message || "Server error");
     }
   };
 

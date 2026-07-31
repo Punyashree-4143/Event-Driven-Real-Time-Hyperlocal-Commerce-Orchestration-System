@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../context/StoreContext";
+import { API_BASE_URL } from "../config/api";
 
 const Products = () => {
   const { store } = useContext(StoreContext);
@@ -15,7 +16,8 @@ const Products = () => {
   const [image, setImage] = useState("");
 
   const token = localStorage.getItem("vendorToken");
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE = API_BASE_URL;
+  const LOCAL_PLACEHOLDER = "/placeholder.svg";
 
   /* =====================
      FETCH PRODUCTS
@@ -25,7 +27,7 @@ const Products = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/api/products/${store._id}`
+        `${API_BASE}/products/${store._id}`
       );
 
       if (!res.ok) {
@@ -53,7 +55,7 @@ const Products = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/api/products`,
+        `${API_BASE}/products`,
         {
           method: "POST",
           headers: {
@@ -146,12 +148,13 @@ const Products = () => {
 
         {image && (
           <img
-            src={image}
+            src={image || LOCAL_PLACEHOLDER}
             alt="Preview"
             className="w-24 h-24 object-cover rounded border"
-            onError={(e) =>
-              (e.target.src = "https://via.placeholder.com/96")
-            }
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = LOCAL_PLACEHOLDER;
+            }}
           />
         )}
 
@@ -179,19 +182,15 @@ const Products = () => {
               {products.map((p) => (
                 <tr key={p._id} className="border-t">
                   <td className="p-3">
-                    {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="w-12 h-12 object-cover rounded"
-                        onError={(e) =>
-                          (e.target.src =
-                            "https://via.placeholder.com/48")
-                        }
-                      />
-                    ) : (
-                      <span className="text-gray-400">No image</span>
-                    )}
+                    <img
+                      src={p.image || LOCAL_PLACEHOLDER}
+                      alt={p.name}
+                      className="w-12 h-12 object-cover rounded"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = LOCAL_PLACEHOLDER;
+                      }}
+                    />
                   </td>
                   <td className="p-3">{p.name}</td>
                   <td className="p-3">₹{p.price}</td>

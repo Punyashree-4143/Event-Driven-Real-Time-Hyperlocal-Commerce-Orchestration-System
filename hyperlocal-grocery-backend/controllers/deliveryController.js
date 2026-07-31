@@ -6,19 +6,33 @@ const Store = require("../models/Store");
    ====================================================== */
 exports.getAvailableOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      status: "Packed",
+    const query = {
       $or: [
-        { deliveryPartner: { $exists: false } }, // ✅ FIX
-        { deliveryPartner: null },
-        { deliveryPartner: req.user._id },
-      ],
-    })
+        { 
+          status: "Ready", 
+          $or: [
+            { deliveryPartner: null }, 
+            { deliveryPartner: { $exists: false } }
+          ] 
+        },
+        { deliveryPartner: req.user._id }
+      ]
+    };
+
+    const orders = await Order.find(query)
       .populate("storeId", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: 1 }); // Sort oldest Ready first
+
+    console.log("===== DELIVERY API =====");
+    console.log(query);
+    console.log("Orders Returned:", orders);
+    orders.forEach(o => {
+      console.log(`Order: id=${o._id}, status=${o.status}, deliveryPartner=${o.deliveryPartner}, deliveryStatus=${o.deliveryStatus}`);
+    });
 
     res.json({ orders });
   } catch (err) {
+    console.error("Failed to fetch delivery orders:", err);
     res.status(500).json({
       message: "Failed to fetch delivery orders",
     });
@@ -38,7 +52,7 @@ exports.acceptDelivery = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    if (order.status !== "Packed") {
+    if (order.status !== "Ready") {
       return res.status(400).json({
         message: "Order not ready for delivery",
       });
@@ -52,6 +66,7 @@ exports.acceptDelivery = async (req, res) => {
 
     order.deliveryPartner = req.user._id;
     order.deliveryStatus = "Assigned";
+    order.status = "Out for Delivery"; // As specified in User Request
     await order.save();
 
     const io = req.app.get("io");
@@ -110,6 +125,14 @@ exports.updateDeliveryStatus = async (req, res) => {
     }
 
     order.deliveryStatus = deliveryStatus;
+    if (deliveryStatus === "Picked Up") {
+      order.status = "Picked Up";
+    } else if (deliveryStatus === "On the Way") {
+      order.status = "Out for Delivery";
+    } else if (deliveryStatus === "Delivered") {
+      order.status = "Delivered";
+    }
+    
     await order.save();
 
     const io = req.app.get("io");

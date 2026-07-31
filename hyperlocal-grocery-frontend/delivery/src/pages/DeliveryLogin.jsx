@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { DeliveryAuthContext } from "../context/DeliveryAuthContext";
+import { apiFetch } from "../config/api";
 
 function DeliveryLogin() {
   const [email, setEmail] = useState("");
@@ -12,18 +13,13 @@ function DeliveryLogin() {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const data = await res.json();
-
-      if (res.ok && data.role === "delivery") {
+      if (data.role === "delivery") {
         login(data.token);
         navigate("/orders");
       } else {
@@ -31,7 +27,7 @@ function DeliveryLogin() {
       }
     } catch (err) {
       console.error("DELIVERY LOGIN ERROR:", err);
-      alert("Server error");
+      alert(err.message || "Server error");
     }
   };
 

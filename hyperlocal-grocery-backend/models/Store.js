@@ -40,6 +40,46 @@ const storeSchema = new mongoose.Schema(
       enum: ["pending", "approved", "blocked"],
       default: "pending",
     },
+
+    logo: {
+      type: String,
+      default: "",
+    },
+
+    banner: {
+      type: String,
+      default: "",
+    },
+
+    holidayMode: {
+      type: Boolean,
+      default: false,
+    },
+
+    businessHours: {
+      type: String,
+      default: "9 AM - 9 PM",
+    },
+
+    minOrder: {
+      type: Number,
+      default: 0,
+    },
+
+    rating: {
+      type: Number,
+      default: 4.5,
+    },
+
+    description: {
+      type: String,
+      default: "",
+    },
+
+    deliveryTime: {
+      type: String,
+      default: "30 mins",
+    },
   },
   { timestamps: true }
 );
