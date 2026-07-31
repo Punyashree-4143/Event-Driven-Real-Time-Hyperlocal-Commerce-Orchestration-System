@@ -11,6 +11,11 @@ const userSchema = mongoose.Schema(
       enum: ["customer", "vendor", "delivery", "admin"],
       default: "customer",
     },
+    phone: { type: String, default: "" },
+    profilePhotoUrl: { type: String, default: "" },
+    profileImage: { type: String, default: "" },
+    address: { type: String, default: "" },
+    status: { type: String, default: "Active" },
   },
   { timestamps: true }
 );

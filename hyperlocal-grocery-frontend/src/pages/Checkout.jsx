@@ -188,7 +188,7 @@ function Checkout() {
     setLoading(true);
 
     const options = {
-      key: "rzp_test_groceryAppKey001", // Test key
+      key: "rzp_test_groceryAppKey0", // Test key
       amount: Math.round(summary.grandTotal * 100), // in paise
       currency: "INR",
       name: "greenmart",

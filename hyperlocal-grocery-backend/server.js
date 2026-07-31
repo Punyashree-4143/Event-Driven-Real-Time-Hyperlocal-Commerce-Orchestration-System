@@ -15,6 +15,7 @@ const orderRoutes = require("./routes/order");
 const adminRoutes = require("./routes/adminRoutes");
 const deliveryRoutes = require("./routes/delivery");
 const catalogRoutes = require("./routes/catalogRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 dotenv.config();
 connectDB();
@@ -39,6 +40,7 @@ app.use(
    API ROUTES
    ===================== */
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);

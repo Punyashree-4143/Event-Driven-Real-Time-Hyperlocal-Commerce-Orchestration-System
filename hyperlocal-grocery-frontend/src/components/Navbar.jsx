@@ -92,7 +92,7 @@ function Navbar() {
             className="cursor-pointer flex items-center gap-1.5 shrink-0"
           >
             <span className="text-2xl font-black tracking-tighter bg-gradient-to-r from-yellow-500 to-green-600 bg-clip-text text-transparent uppercase">
-              ⚡ greenmart
+              ⚡ LocalMart
             </span>
           </div>
 
