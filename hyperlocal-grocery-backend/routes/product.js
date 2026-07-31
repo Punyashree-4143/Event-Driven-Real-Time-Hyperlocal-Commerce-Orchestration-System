@@ -11,6 +11,7 @@ const {
   getProductsByCategory,
   searchProducts,
   filterProducts,
+  getProductById,
 } = require("../controllers/productController");
 
 const shopOnly = require("../middleware/shopOnly");
@@ -20,6 +21,7 @@ router.get("/categories", getCategories);
 router.get("/filter", filterProducts);
 router.get("/search", searchProducts);
 router.get("/category/:category", getProductsByCategory);
+router.get("/detail/:productId", getProductById);
 
 // 🔥 SHOP (VENDOR) ROUTES
 router.get("/vendor/all", shopOnly, getVendorProducts);

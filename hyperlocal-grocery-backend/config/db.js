@@ -7,6 +7,8 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log("mongoose.connection.name:", conn.connection.name);
+    console.log("mongoose.connection.host:", conn.connection.host);
 
     // 🔥 Migration: Update products with no/empty category to "Others"
     try {

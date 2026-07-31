@@ -8,6 +8,7 @@ const isValidObjectId = (id) => {
   return typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
 };
 
+const LOCAL_PLACEHOLDER = "/placeholder.svg";
 const API_BASE = API_BASE_URL;
 
 const FALLBACK_TAXONOMY = {
@@ -77,8 +78,14 @@ function CategoryPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [categoriesTaxonomy, setCategoriesTaxonomy] = useState(FALLBACK_TAXONOMY);
-  const [subCategory, setSubCategory] = useState("All");
+  const [categoriesTaxonomy, setCategoriesTaxonomy] = useState([]);
+  const [subCategoriesTaxonomy, setSubCategoriesTaxonomy] = useState([]);
+  const [productTypesTaxonomy, setProductTypesTaxonomy] = useState([]);
+
+  const [activeCategoryId, setActiveCategoryId] = useState(null);
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("All");
+  const [selectedProductTypeId, setSelectedProductTypeId] = useState("All");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sort, setSort] = useState("relevance");
   const [minPrice, setMinPrice] = useState("");
@@ -126,22 +133,37 @@ function CategoryPage() {
           console.error("Error loading store details:", err);
           setError(err.message);
         });
+
+      // Fetch store taxonomy catalog from MongoDB
+      fetch(`${API_BASE}/catalog/store-catalog?storeId=${sId}`)
+        .then(safeJsonParse)
+        .then((data) => {
+          const cats = data.categories || [];
+          setCategoriesTaxonomy(cats);
+          setSubCategoriesTaxonomy(data.subcategories || []);
+          setProductTypesTaxonomy(data.producttypes || []);
+
+          // Resolve active category ID
+          const matched = cats.find(c => c.name === category);
+          if (matched) {
+            setActiveCategoryId(matched._id);
+          }
+        })
+        .catch((err) => {
+          console.error("Error loading catalog taxonomy:", err);
+          setError(err.message);
+        });
     } else {
       setStoreId(null);
       setStore(null);
     }
+  }, [category, searchParams, navigate]);
 
-    // Fetch categories taxonomy
-    fetch(`${API_BASE}/products/categories`)
-      .then(safeJsonParse)
-      .then((data) => {
-        if (data.categories) setCategoriesTaxonomy(data.categories);
-      })
-      .catch((err) => {
-        console.error("Error loading categories taxonomy:", err);
-        setError(err.message);
-      });
-  }, [searchParams, navigate]);
+  // Reset filter selection when category changes
+  useEffect(() => {
+    setSelectedSubCategoryId("All");
+    setSelectedProductTypeId("All");
+  }, [category]);
 
   /* =========================
      FETCH PRODUCTS BY FILTERS
@@ -155,12 +177,19 @@ function CategoryPage() {
     setLoading(true);
     setError(null);
     
-    // Construct query parameters
-    let url = `${API_BASE}/products/filter?category=${encodeURIComponent(category)}`;
-    url += `&storeId=${storeId}`;
+    // Construct query parameters using resolved IDs
+    let url = `${API_BASE}/products/filter?storeId=${storeId}`;
+    if (activeCategoryId) {
+      url += `&categoryId=${activeCategoryId}`;
+    } else {
+      url += `&category=${encodeURIComponent(category)}`;
+    }
 
-    if (subCategory !== "All") {
-      url += `&subCategory=${encodeURIComponent(subCategory)}`;
+    if (selectedSubCategoryId !== "All") {
+      url += `&subCategoryId=${selectedSubCategoryId}`;
+    }
+    if (selectedProductTypeId !== "All") {
+      url += `&productTypeId=${selectedProductTypeId}`;
     }
     if (isFeaturedOnly) {
       url += `&isFeatured=true`;
@@ -201,7 +230,7 @@ function CategoryPage() {
         setError(err.message);
       })
       .finally(() => setLoading(false));
-  }, [storeId, category, subCategory, sort, minPrice, maxPrice, isFeaturedOnly]);
+  }, [storeId, category, activeCategoryId, selectedSubCategoryId, selectedProductTypeId, sort, minPrice, maxPrice, isFeaturedOnly]);
 
   /* =========================
      REAL-TIME SOCKETS
@@ -244,15 +273,18 @@ function CategoryPage() {
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.subCategory?.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.brand || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesBrand = selectedBrand === "All" || p.brand === selectedBrand;
 
     return matchesSearch && matchesBrand;
   });
 
-  const subCategoriesList = ["All", ...(categoriesTaxonomy[category] || [])];
+  const activeSubCategories = subCategoriesTaxonomy.filter(sc => sc.categoryId === activeCategoryId);
+  const activeProductTypes = selectedSubCategoryId === "All"
+    ? []
+    : productTypesTaxonomy.filter(pt => pt.subCategoryId === selectedSubCategoryId);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -285,21 +317,66 @@ function CategoryPage() {
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
         {/* 🏷️ Subcategory Chips */}
-        <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide">
-          {subCategoriesList.map((sub) => (
+        <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide border-b border-gray-100 pb-3">
+          <button
+            onClick={() => {
+              setSelectedSubCategoryId("All");
+              setSelectedProductTypeId("All");
+            }}
+            className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium border transition-all duration-150 ${
+              selectedSubCategoryId === "All"
+                ? "bg-green-600 text-white border-green-600 shadow"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            All Subcategories
+          </button>
+          {activeSubCategories.map((sub) => (
             <button
-              key={sub}
-              onClick={() => setSubCategory(sub)}
+              key={sub._id}
+              onClick={() => {
+                setSelectedSubCategoryId(sub._id);
+                setSelectedProductTypeId("All");
+              }}
               className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium border transition-all duration-150 ${
-                subCategory === sub
+                selectedSubCategoryId === sub._id
                   ? "bg-green-600 text-white border-green-600 shadow"
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              {sub}
+              {sub.name}
             </button>
           ))}
         </div>
+
+        {/* 🏷️ Product Type Chips */}
+        {selectedSubCategoryId !== "All" && activeProductTypes.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide border-b border-gray-100 pb-3 animate-fadeIn">
+            <button
+              onClick={() => setSelectedProductTypeId("All")}
+              className={`px-3 py-1.5 rounded-full whitespace-nowrap text-xs font-semibold border transition-all duration-150 ${
+                selectedProductTypeId === "All"
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow"
+                  : "bg-white text-gray-650 border-gray-200 hover:bg-gray-100"
+              }`}
+            >
+              All Types
+            </button>
+            {activeProductTypes.map((type) => (
+              <button
+                key={type._id}
+                onClick={() => setSelectedProductTypeId(type._id)}
+                className={`px-3 py-1.5 rounded-full whitespace-nowrap text-xs font-semibold border transition-all duration-150 ${
+                  selectedProductTypeId === type._id
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow"
+                    : "bg-white text-gray-650 border-gray-200 hover:bg-gray-100"
+                }`}
+              >
+                {type.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 🛠️ Toolbar: Search, Sort, Filters */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -390,7 +467,8 @@ function CategoryPage() {
               onClick={() => {
                 setError(null);
                 setLoading(true);
-                setSubCategory("All");
+                setSelectedSubCategoryId("All");
+                setSelectedProductTypeId("All");
               }}
               className="mt-4 bg-red-600 hover:bg-red-700 text-white font-medium text-xs px-4 py-2 rounded-lg transition"
             >
@@ -418,12 +496,13 @@ function CategoryPage() {
                 >
                   {/* 🖼 Image */}
                   <img
-                    src={p.image}
+                    src={p.image || LOCAL_PLACEHOLDER}
                     alt={p.name}
                     className="h-32 w-full object-cover rounded-lg mb-2"
-                    onError={(e) =>
-                      (e.target.src = "https://via.placeholder.com/150")
-                    }
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = LOCAL_PLACEHOLDER;
+                    }}
                   />
 
                   {/* 📦 Name & Brand */}

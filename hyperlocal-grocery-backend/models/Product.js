@@ -72,6 +72,15 @@ const productSchema = new mongoose.Schema(
       default: ["1 kg"],
     },
 
+    variants: [
+      {
+        weight: { type: String, required: true }, // e.g. "250g", "500g", "1kg", "Pieces", "Packets"
+        price: { type: Number, required: true },
+        mrp: { type: Number, required: true },
+        stock: { type: Number, required: true, default: 0 },
+      }
+    ],
+
     deliveryTime: {
       type: String,
       default: "30 mins",
@@ -81,50 +90,112 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    sku: {
+      type: String,
+      default: "",
+    },
+
+    barcode: {
+      type: String,
+      default: "",
+    },
+
+    images: {
+      type: [String],
+      default: [],
+    },
+
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StoreCategory",
+      default: null,
+    },
+
+    subCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StoreSubCategory",
+      default: null,
+    },
+
+    productTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StoreProductType",
+      default: null,
+    },
+
+    productType: {
+      type: String,
+      default: "",
+    },
+
+    shelfLife: {
+      type: String,
+      default: "",
+    },
+
+    countryOfOrigin: {
+      type: String,
+      default: "",
+    },
+
+    manufacturer: {
+      type: String,
+      default: "",
+    },
+
+    storageInstructions: {
+      type: String,
+      default: "",
+    },
+
+    nutrition: {
+      energy: { type: String, default: "" },
+      protein: { type: String, default: "" },
+      carbohydrates: { type: String, default: "" },
+      fat: { type: String, default: "" },
+      fiber: { type: String, default: "" },
+      sugar: { type: String, default: "" },
+      sodium: { type: String, default: "" },
+      vitaminC: { type: String, default: "" },
+      calcium: { type: String, default: "" },
+      iron: { type: String, default: "" }
+    },
+
+    attributes: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true }
 );
 
-// 🔥 Auto-update availability based on stock, and sync price/sellingPrice
 productSchema.pre("save", function (next) {
+  if (this.variants && this.variants.length > 0) {
+    this.availableWeights = this.variants.map(v => v.weight);
+    this.stock = this.variants.reduce((sum, v) => sum + Number(v.stock), 0);
+    const firstVar = this.variants[0];
+    this.price = Number(firstVar.price);
+    this.sellingPrice = Number(firstVar.price);
+    this.mrp = Number(firstVar.mrp);
+  } else {
+    // Sync sellingPrice and price to avoid breaking existing logic
+    if (this.sellingPrice != null) {
+      this.price = this.sellingPrice;
+    } else if (this.price != null) {
+      this.sellingPrice = this.price;
+    }
+
+    if (this.mrp == null && this.sellingPrice != null) {
+      this.mrp = this.sellingPrice;
+    }
+  }
+
+  // Update availability based on stock
   if (this.stock <= 0) {
     this.isAvailable = false;
   } else if (this.isAvailable === undefined) {
     this.isAvailable = true;
-  }
-
-  // Map legacy category names to parent and subcategory
-  const legacyMap = {
-    "Vegetables": { category: "Fruits & Vegetables", subCategory: "Vegetables" },
-    "Fruits": { category: "Fruits & Vegetables", subCategory: "Fruits" },
-    "Milk": { category: "Dairy & Breakfast", subCategory: "Milk" },
-    "Curd": { category: "Dairy & Breakfast", subCategory: "Curd" },
-    "Butter": { category: "Dairy & Breakfast", subCategory: "Butter" },
-    "Pencil": { category: "Stationery", subCategory: "Pencils" },
-    "Pen": { category: "Stationery", subCategory: "Pens" },
-    "Notebook": { category: "Stationery", subCategory: "Notebooks" },
-    "Snacks": { category: "Snacks & Beverages", subCategory: "Chips" }
-  };
-
-  if (this.category && legacyMap[this.category]) {
-    const mapped = legacyMap[this.category];
-    this.category = mapped.category;
-    this.subCategory = mapped.subCategory;
-  }
-
-  if (!this.category) {
-    this.category = "Others";
-  }
-
-  // Sync sellingPrice and price to avoid breaking existing logic
-  if (this.sellingPrice != null) {
-    this.price = this.sellingPrice;
-  } else if (this.price != null) {
-    this.sellingPrice = this.price;
-  }
-
-  if (this.mrp == null && this.sellingPrice != null) {
-    this.mrp = this.sellingPrice;
   }
 
   next();

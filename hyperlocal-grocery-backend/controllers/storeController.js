@@ -1,5 +1,6 @@
 const Store = require("../models/Store");
 const Product = require("../models/Product");
+const { seedDefaultCatalog } = require("../utils/seedCatalog");
 
 // ===============================
 // GET NEARBY STORES
@@ -95,7 +96,7 @@ exports.getNearbyStores = async (req, res) => {
 // ===============================
 exports.createStore = async (req, res) => {
   try {
-    const { name, address, location, deliveryRadius } = req.body;
+    const { name, address, location, deliveryRadius, logo, banner, holidayMode, businessHours, minOrder, description, deliveryTime } = req.body;
 
     if (
       !name ||
@@ -130,8 +131,18 @@ exports.createStore = async (req, res) => {
         ],
       },
       deliveryRadius,
+      logo: logo || "",
+      banner: banner || "",
+      holidayMode: !!holidayMode,
+      businessHours: businessHours || "9 AM - 9 PM",
+      minOrder: Number(minOrder) || 0,
+      description: description || "",
+      deliveryTime: deliveryTime || "30 mins",
       status: "pending", // admin approval required
     });
+
+    // 🌾 Seed default grocery catalog dynamically
+    await seedDefaultCatalog(store._id);
 
     res.status(201).json(store);
   } catch (error) {

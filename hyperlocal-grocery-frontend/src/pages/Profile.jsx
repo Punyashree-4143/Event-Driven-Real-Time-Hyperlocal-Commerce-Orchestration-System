@@ -1,25 +1,21 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 
 function Profile() {
   const [orders, setOrders] = useState([]);
-  const [address, setAddress] = useState("");
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const navigate = useNavigate();
   const userToken = localStorage.getItem("userToken");
-
   const API_BASE = API_BASE_URL;
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(
-        `${API_BASE}/orders/my`,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      );
+      const res = await fetch(`${API_BASE}/orders/my`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
       const data = await res.json();
       if (res.ok) setOrders(data.orders || []);
     } catch (err) {
@@ -29,29 +25,20 @@ function Profile() {
 
   useEffect(() => {
     fetchOrders();
-    setAddress(localStorage.getItem("deliveryAddress") || "");
+    const list = JSON.parse(localStorage.getItem("userAddresses")) || [];
+    setSavedAddresses(list);
   }, []);
 
-  /* =====================
-     REORDER
-     ===================== */
   const reorder = async (order) => {
     try {
-      const res = await fetch(
-        `${API_BASE}/orders/${order._id}/reorder-check`,
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      );
-
+      const res = await fetch(`${API_BASE}/orders/${order._id}/reorder-check`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
       const data = await res.json();
-
       if (!data.canReorder) {
-        alert(
-          `Out of stock: ${data.unavailableItems.join(", ")}`
-        );
+        alert(`Out of stock: ${data.unavailableItems.join(", ")}`);
         return;
       }
 
@@ -67,7 +54,6 @@ function Profile() {
           }))
         )
       );
-
       navigate("/cart");
     } catch (err) {
       console.error("REORDER ERROR:", err);
@@ -75,23 +61,16 @@ function Profile() {
     }
   };
 
-  /* =====================
-     CANCEL ORDER
-     ===================== */
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Cancel this order?")) return;
 
     try {
-      const res = await fetch(
-        `${API_BASE}/orders/${orderId}/cancel`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      );
-
+      const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
       const data = await res.json();
       if (res.ok) {
         alert("Order cancelled");
@@ -105,123 +84,122 @@ function Profile() {
     }
   };
 
-  /* =====================
-     STATUS RESOLVER
-     ===================== */
   const getCustomerStatus = (order) => {
-    if (order.deliveryStatus === "Delivered") {
-      return "Delivered";
-    }
+    if (order.deliveryStatus === "Delivered") return "Delivered";
     return order.status;
   };
 
-  /* =====================
-     STATUS BADGE
-     ===================== */
   const statusBadge = (status) => {
     const styles = {
-      Placed: "bg-yellow-100 text-yellow-700",
-      Packed: "bg-blue-100 text-blue-700",
-      "Out for Delivery": "bg-purple-100 text-purple-700",
-      Delivered: "bg-green-100 text-green-700",
-      Cancelled: "bg-red-100 text-red-700",
+      Placed: "bg-yellow-150 text-yellow-800 border-yellow-200",
+      Packed: "bg-blue-50 text-blue-700 border-blue-100",
+      "Out for Delivery": "bg-purple-50 text-purple-700 border-purple-100",
+      Delivered: "bg-green-50 text-green-700 border-green-200",
+      Cancelled: "bg-red-50 text-red-700 border-red-150",
     };
-
     return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          styles[status] || "bg-gray-100 text-gray-600"
-        }`}
-      >
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status] || "bg-gray-50 text-gray-600 border-gray-150"}`}>
         {status}
       </span>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <h2 className="text-2xl font-semibold mb-6">
-        My Profile
-      </h2>
+    <div className="max-w-3xl mx-auto min-h-screen bg-gray-50 p-4 sm:p-6 text-left">
+      <h2 className="text-2xl font-black text-gray-800 mb-6">My Profile</h2>
 
-      {/* ADDRESS */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6">
-        <h3 className="font-semibold mb-1">
-          Saved Address
-        </h3>
-        <p className="text-gray-700">
-          {address || "No address saved"}
-        </p>
+      {/* ADDRESSES MANAGEMENT */}
+      <div className="bg-white rounded-2xl border border-gray-150 p-6 shadow-sm mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-extrabold text-base text-gray-800">
+            📍 Saved Addresses ({savedAddresses.length})
+          </h3>
+          <button
+            onClick={() => navigate("/addresses")}
+            className="text-xs font-black text-green-600 hover:underline"
+          >
+            Manage Addresses
+          </button>
+        </div>
+
+        {savedAddresses.length === 0 ? (
+          <p className="text-gray-500 text-xs font-semibold">No addresses saved. Add one to orchestrate delivery.</p>
+        ) : (
+          <div className="space-y-3">
+            {savedAddresses.map((addr) => (
+              <div 
+                key={addr.id} 
+                onClick={() => navigate("/addresses")}
+                className="p-3.5 border rounded-xl flex items-center justify-between text-xs hover:bg-gray-50 cursor-pointer transition"
+              >
+                <div>
+                  <span className="font-black text-gray-800">
+                    {addr.type === "Home" ? "🏠 Home" : addr.type === "Work" ? "💼 Work" : "📍 Other"}
+                  </span>
+                  <p className="font-bold text-gray-700 mt-1">{addr.apartment}, {addr.addressLine}</p>
+                  {addr.isDefault && <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider bg-green-50 px-1.5 py-0.5 rounded mt-1.5 inline-block">Default Address</span>}
+                </div>
+                <span className="text-gray-400">→</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ORDERS */}
-      <div className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-semibold mb-4">
-          My Orders
-        </h3>
+      {/* ORDERS LIST */}
+      <div className="bg-white rounded-2xl border border-gray-150 p-6 shadow-sm">
+        <h3 className="font-extrabold text-base text-gray-800 mb-4">My Orders</h3>
 
         {orders.length === 0 ? (
-          <p className="text-gray-500">
-            No orders yet
-          </p>
+          <p className="text-gray-500 text-xs font-semibold">No orders placed yet.</p>
         ) : (
-          orders.map((order) => {
-            const finalStatus =
-              getCustomerStatus(order);
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const finalStatus = getCustomerStatus(order);
+              return (
+                <div
+                  key={order._id}
+                  className={`border rounded-2xl p-4 transition duration-150 hover:shadow-sm ${
+                    finalStatus === "Cancelled" ? "bg-red-50/30 border-red-150" : "bg-white border-gray-150"
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                      Order #{order._id.slice(-6)}
+                    </p>
+                    {statusBadge(finalStatus)}
+                  </div>
 
-            return (
-              <div
-                key={order._id}
-                className={`border rounded-lg p-3 mb-3 ${
-                  finalStatus === "Cancelled"
-                    ? "bg-red-50 border-red-200"
-                    : "bg-white"
-                }`}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-sm text-gray-500">
-                    Order #{order._id.slice(-6)}
-                  </p>
-                  {statusBadge(finalStatus)}
-                </div>
+                  <p className="font-black text-lg text-gray-850 mb-4">₹{order.totalAmount}</p>
 
-                <p className="font-semibold mb-2">
-                  ₹{order.totalAmount}
-                </p>
-
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/tracking/${order._id}`
-                      )
-                    }
-                    className="bg-green-600 text-white px-3 py-1.5 rounded text-sm"
-                  >
-                    Track
-                  </button>
-
-                  <button
-                    onClick={() => reorder(order)}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm"
-                  >
-                    Reorder
-                  </button>
-
-                  {order.status === "Placed" && (
+                  <div className="flex gap-2">
                     <button
-                      onClick={() =>
-                        cancelOrder(order._id)
-                      }
-                      className="bg-red-600 text-white px-3 py-1.5 rounded text-sm"
+                      onClick={() => navigate(`/tracking/${order._id}`)}
+                      className="bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-sm"
                     >
-                      Cancel
+                      Track Order
                     </button>
-                  )}
+
+                    <button
+                      onClick={() => reorder(order)}
+                      className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs px-4 py-2 rounded-xl transition"
+                    >
+                      Reorder
+                    </button>
+
+                    {order.status === "Placed" && (
+                      <button
+                        onClick={() => cancelOrder(order._id)}
+                        className="bg-red-50 border border-red-200 text-red-650 hover:bg-red-100 font-bold text-xs px-4 py-2 rounded-xl transition ml-auto"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

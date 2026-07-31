@@ -103,7 +103,7 @@ exports.getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate("deliveryPartner", "name email");
 
     if (!order) {
       return res.status(404).json({
@@ -252,7 +252,9 @@ exports.getVendorOrders = async (req, res) => {
 
     const orders = await Order.find({
       storeId: store._id,
-    }).sort({ createdAt: -1 });
+    })
+      .populate("userId", "name email phone")
+      .sort({ createdAt: -1 });
 
     res.json({ orders });
   } catch (err) {
@@ -292,9 +294,14 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    // ✅ FIX: Vendor stops at PACKED
+    // ✅ FIX: Vendor stops at PACKED / READY
     const validTransitions = {
-      Placed: ["Packed"],
+      Placed: ["Accepted", "Cancelled", "Packed"],
+      Accepted: ["Preparing", "Cancelled"],
+      Preparing: ["Packed", "Cancelled"],
+      Packed: ["Ready", "Cancelled"],
+      Ready: ["Cancelled"],
+      Cancelled: []
     };
 
     if (
@@ -308,15 +315,22 @@ exports.updateOrderStatus = async (req, res) => {
 
     order.status = status;
     await order.save();
+    console.log(`[VENDOR DEBUG] Mongo updated: order ${order._id} status changed to ${status}`);
 
     const io = req.app.get("io");
 
     // 🔔 Vendor dashboard update (existing)
     io.to(store._id.toString()).emit("order:update", order);
+    console.log(`[VENDOR DEBUG] Socket emitted order:update to store room: ${store._id}`);
+
+    // 🔔 Customer tracking update (MERN sync)
+    io.to(order._id.toString()).emit("order:update", order);
+    console.log(`[VENDOR DEBUG] Socket emitted order:update to customer order room: ${order._id}`);
 
     // 🚚 Notify delivery (existing socket logic)
-    if (status === "Packed") {
+    if (status === "Packed" || status === "Ready") {
       io.to("delivery").emit("delivery:update");
+      console.log(`[VENDOR DEBUG] Socket emitted delivery:update for order: ${order._id}`);
     }
 
     res.json({

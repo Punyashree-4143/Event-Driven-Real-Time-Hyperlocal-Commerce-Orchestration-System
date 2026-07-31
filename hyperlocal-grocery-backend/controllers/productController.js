@@ -1,5 +1,8 @@
 const Product = require("../models/Product");
 const Store = require("../models/Store");
+const StoreCategory = require("../models/StoreCategory");
+const StoreSubCategory = require("../models/StoreSubCategory");
+const StoreProductType = require("../models/StoreProductType");
 
 const getStoreQueryConditions = async (storeId) => {
   if (!storeId) return null;
@@ -31,6 +34,79 @@ const getStoreQueryConditions = async (storeId) => {
 };
 
 // ===============================
+// ON-THE-FLY AUTOMATIC MIGRATION
+// ===============================
+const migrateStoreProducts = async (storeId) => {
+  try {
+    const products = await Product.find({ storeId });
+    for (const p of products) {
+      let changed = false;
+
+      // 1. Map Category
+      if (!p.categoryId) {
+        const catName = p.category || "Others";
+        let cat = await StoreCategory.findOne({ storeId, name: catName });
+        if (!cat) {
+          cat = await StoreCategory.create({
+            storeId,
+            name: catName,
+            displayOrder: await StoreCategory.countDocuments({ storeId }),
+            icon: "",
+            isActive: true
+          });
+        }
+        p.categoryId = cat._id;
+        p.category = cat.name;
+        changed = true;
+      }
+
+      // 2. Map SubCategory
+      if (!p.subCategoryId) {
+        const cat = await StoreCategory.findById(p.categoryId);
+        const subName = p.subCategory || (cat ? cat.name : "General");
+        let sub = await StoreSubCategory.findOne({ storeId, categoryId: p.categoryId, name: subName });
+        if (!sub) {
+          sub = await StoreSubCategory.create({
+            storeId,
+            categoryId: p.categoryId,
+            name: subName,
+            displayOrder: await StoreSubCategory.countDocuments({ storeId, categoryId: p.categoryId }),
+            isActive: true
+          });
+        }
+        p.subCategoryId = sub._id;
+        p.subCategory = sub.name;
+        changed = true;
+      }
+
+      // 3. Map Product Type
+      if (!p.productTypeId) {
+        const sub = await StoreSubCategory.findById(p.subCategoryId);
+        const typeName = sub ? sub.name : "General";
+        let type = await StoreProductType.findOne({ storeId, subCategoryId: p.subCategoryId, name: typeName });
+        if (!type) {
+          type = await StoreProductType.create({
+            storeId,
+            subCategoryId: p.subCategoryId,
+            name: typeName,
+            displayOrder: await StoreProductType.countDocuments({ storeId, subCategoryId: p.subCategoryId }),
+            isActive: true
+          });
+        }
+        p.productTypeId = type._id;
+        changed = true;
+      }
+
+      if (changed) {
+        await p.save();
+      }
+    }
+  } catch (err) {
+    console.error("❌ Product migration error:", err.message);
+  }
+};
+
+// ===============================
 // CUSTOMER SIDE – GET PRODUCTS BY STORE
 // ===============================
 exports.getProductsByStore = async (req, res) => {
@@ -44,6 +120,9 @@ exports.getProductsByStore = async (req, res) => {
       console.log("Returned products: []");
       return res.json({ products: [] });
     }
+
+    // Trigger migration helper
+    await migrateStoreProducts(storeConditions);
 
     const query = {
       isAvailable: true,
@@ -74,6 +153,9 @@ exports.getVendorProducts = async (req, res) => {
       return res.status(404).json({ message: "Store not found" });
     }
 
+    // Trigger migration helper
+    await migrateStoreProducts(store._id);
+
     const products = await Product.find({
       storeId: store._id,
     });
@@ -88,29 +170,76 @@ exports.getVendorProducts = async (req, res) => {
 // ===============================
 // ADD PRODUCT (VENDOR)
 // ===============================
+
+
+const validateProductData = (data) => {
+  const { name, category, subCategory, image, mrp, sellingPrice, stock, variants } = data;
+
+  if (!name || !name.trim()) return "Product Name is required";
+  if (!category || !category.trim()) return "Category is required";
+  if (!subCategory || !subCategory.trim()) return "Subcategory is required";
+  if (!image || !image.trim()) return "Primary Image URL is required";
+
+  if (variants && variants.length > 0) {
+    for (const v of variants) {
+      if (!v.weight || !v.weight.trim()) return "Variant weight is required";
+      if (v.price == null || v.mrp == null) return "Variant price and MRP are required";
+      if (Number(v.price) < 0 || Number(v.mrp) < 0) return "Variant price and MRP must be positive numbers";
+      if (Number(v.price) > Number(v.mrp)) return "Variant Selling Price cannot be greater than MRP";
+      if (Number(v.stock) < 0) return "Variant stock cannot be negative";
+    }
+  } else {
+    if (sellingPrice != null && mrp != null && Number(sellingPrice) > Number(mrp)) {
+      return "Selling Price cannot be greater than MRP";
+    }
+    if (stock != null && Number(stock) < 0) {
+      return "Stock cannot be negative";
+    }
+  }
+  return null;
+};
+
+// ===============================
+// ADD PRODUCT (VENDOR)
+// ===============================
 exports.addProduct = async (req, res) => {
   try {
+    const valError = validateProductData(req.body);
+    if (valError) {
+      return res.status(400).json({ message: valError });
+    }
+
     const {
       name,
       price,
+      mrp,
+      sellingPrice,
       stock,
       category,
       image,
       subCategory,
       brand,
       description,
-      mrp,
-      sellingPrice,
       unit,
       availableWeights,
       deliveryTime,
       isFeatured,
-      isAvailable
+      isAvailable,
+      sku,
+      barcode,
+      images,
+      categoryId,
+      subCategoryId,
+      productTypeId,
+      productType,
+      shelfLife,
+      countryOfOrigin,
+      manufacturer,
+      storageInstructions,
+      nutrition,
+      attributes,
+      variants
     } = req.body;
-
-    if (!name || (price == null && sellingPrice == null) || stock == null) {
-      return res.status(400).json({ message: "Required fields missing" });
-    }
 
     const store = await Store.findOne({ owner: req.user._id });
 
@@ -118,23 +247,52 @@ exports.addProduct = async (req, res) => {
       return res.status(404).json({ message: "Store not found" });
     }
 
+    let finalPrice = price != null ? price : sellingPrice;
+    let finalSellingPrice = sellingPrice != null ? sellingPrice : price;
+    let finalMrp = mrp != null ? mrp : finalSellingPrice;
+    let finalStock = stock != null ? stock : 0;
+    let finalWeights = availableWeights || ["1 kg"];
+
+    if (variants && variants.length > 0) {
+      finalWeights = variants.map(v => v.weight);
+      finalStock = variants.reduce((sum, v) => sum + Number(v.stock), 0);
+      const firstVar = variants[0];
+      finalPrice = Number(firstVar.price);
+      finalSellingPrice = Number(firstVar.price);
+      finalMrp = Number(firstVar.mrp);
+    }
+
     const product = await Product.create({
       storeId: store._id,
       name,
-      price: price != null ? price : sellingPrice,
-      stock,
+      price: finalPrice,
+      stock: finalStock,
       category: category || "Others",
-      image,
-      subCategory,
-      brand,
-      description,
-      mrp: mrp != null ? mrp : (sellingPrice != null ? sellingPrice : price),
-      sellingPrice: sellingPrice != null ? sellingPrice : price,
+      image: image || "",
+      subCategory: subCategory || "",
+      brand: brand || "",
+      description: description || "",
+      mrp: finalMrp,
+      sellingPrice: finalSellingPrice,
       unit: unit || "kg",
-      availableWeights: availableWeights || ["1 kg"],
+      availableWeights: finalWeights,
       deliveryTime: deliveryTime || "30 mins",
       isFeatured: isFeatured === true || isFeatured === "true",
-      isAvailable: isAvailable !== false && isAvailable !== "false"
+      isAvailable: isAvailable !== false && isAvailable !== "false",
+      sku: sku || "",
+      barcode: barcode || "",
+      images: images || [],
+      categoryId: categoryId || null,
+      subCategoryId: subCategoryId || null,
+      productTypeId: productTypeId || null,
+      productType: productType || "",
+      shelfLife: shelfLife || "",
+      countryOfOrigin: countryOfOrigin || "",
+      manufacturer: manufacturer || "",
+      storageInstructions: storageInstructions || "",
+      nutrition: nutrition || {},
+      attributes: attributes || {},
+      variants: variants || []
     });
 
     res.status(201).json(product);
@@ -148,6 +306,11 @@ exports.addProduct = async (req, res) => {
 // ===============================
 exports.updateProduct = async (req, res) => {
   try {
+    const valError = validateProductData(req.body);
+    if (valError) {
+      return res.status(400).json({ message: valError });
+    }
+
     const { productId } = req.params;
 
     const product = await Product.findById(productId).populate("storeId");
@@ -233,6 +396,9 @@ exports.getProductsByCategory = async (req, res) => {
       return res.json({ products: [] });
     }
 
+    // Trigger migration helper
+    await migrateStoreProducts(storeConditions);
+
     const query = { category, isAvailable: true, storeId: storeConditions };
     if (subCategory) {
       query.subCategory = subCategory;
@@ -280,6 +446,9 @@ exports.searchProducts = async (req, res) => {
       return res.json({ products: [] });
     }
 
+    // Trigger migration helper
+    await migrateStoreProducts(storeConditions);
+
     const searchRegex = new RegExp(q, "i");
     const query = {
       isAvailable: true,
@@ -309,7 +478,7 @@ exports.searchProducts = async (req, res) => {
 // ===============================
 exports.filterProducts = async (req, res) => {
   try {
-    const { storeId, category, subCategory, brand, minPrice, maxPrice, isFeatured, search, sort } = req.query;
+    const { storeId, category, subCategory, brand, minPrice, maxPrice, isFeatured, search, sort, categoryId, subCategoryId, productTypeId } = req.query;
     console.log("Incoming storeId:", storeId);
 
     if (!storeId) {
@@ -325,9 +494,27 @@ exports.filterProducts = async (req, res) => {
       return res.json({ products: [] });
     }
 
+    // Trigger migration helper
+    await migrateStoreProducts(storeConditions);
+
     const query = { isAvailable: true, storeId: storeConditions };
-    if (category) query.category = category;
-    if (subCategory) query.subCategory = subCategory;
+    
+    if (categoryId) {
+      query.categoryId = categoryId;
+    } else if (category) {
+      query.category = category;
+    }
+
+    if (subCategoryId) {
+      query.subCategoryId = subCategoryId;
+    } else if (subCategory) {
+      query.subCategory = subCategory;
+    }
+
+    if (productTypeId) {
+      query.productTypeId = productTypeId;
+    }
+
     if (brand) query.brand = new RegExp(brand, "i");
     if (isFeatured === "true" || isFeatured === true) query.isFeatured = true;
 
@@ -365,3 +552,25 @@ exports.filterProducts = async (req, res) => {
   }
 };
 
+// ===============================
+// GET PRODUCT BY ID (CUSTOMER)
+// ===============================
+exports.getProductById = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "Invalid Product ID" });
+    }
+
+    const product = await Product.findById(productId).populate("storeId");
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json({ product });
+  } catch (err) {
+    console.error("GET PRODUCT BY ID ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};

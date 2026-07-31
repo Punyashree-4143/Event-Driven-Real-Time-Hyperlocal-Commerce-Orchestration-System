@@ -17,6 +17,7 @@ const Products = () => {
 
   const token = localStorage.getItem("vendorToken");
   const API_BASE = API_BASE_URL;
+  const LOCAL_PLACEHOLDER = "/placeholder.svg";
 
   /* =====================
      FETCH PRODUCTS
@@ -147,12 +148,13 @@ const Products = () => {
 
         {image && (
           <img
-            src={image}
+            src={image || LOCAL_PLACEHOLDER}
             alt="Preview"
             className="w-24 h-24 object-cover rounded border"
-            onError={(e) =>
-              (e.target.src = "https://via.placeholder.com/96")
-            }
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = LOCAL_PLACEHOLDER;
+            }}
           />
         )}
 
@@ -180,19 +182,15 @@ const Products = () => {
               {products.map((p) => (
                 <tr key={p._id} className="border-t">
                   <td className="p-3">
-                    {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="w-12 h-12 object-cover rounded"
-                        onError={(e) =>
-                          (e.target.src =
-                            "https://via.placeholder.com/48")
-                        }
-                      />
-                    ) : (
-                      <span className="text-gray-400">No image</span>
-                    )}
+                    <img
+                      src={p.image || LOCAL_PLACEHOLDER}
+                      alt={p.name}
+                      className="w-12 h-12 object-cover rounded"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = LOCAL_PLACEHOLDER;
+                      }}
+                    />
                   </td>
                   <td className="p-3">{p.name}</td>
                   <td className="p-3">₹{p.price}</td>

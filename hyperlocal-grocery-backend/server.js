@@ -14,6 +14,7 @@ const productRoutes = require("./routes/product");
 const orderRoutes = require("./routes/order");
 const adminRoutes = require("./routes/adminRoutes");
 const deliveryRoutes = require("./routes/delivery");
+const catalogRoutes = require("./routes/catalogRoutes");
 
 dotenv.config();
 connectDB();
@@ -43,6 +44,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/delivery", deliveryRoutes);
+app.use("/api/catalog", catalogRoutes);
 
 /* =====================
    HEALTH CHECK
@@ -94,6 +96,12 @@ io.on("connection", (socket) => {
   socket.on("joinDelivery", () => {
     socket.join("delivery");
     console.log("🚚 Delivery joined delivery room");
+  });
+
+  // 📍 RIDER LOCATION TRACKING
+  socket.on("updateLocation", ({ orderId, lat, lng }) => {
+    io.to(orderId).emit("locationUpdate", { lat, lng });
+    console.log(`📍 Location update for order ${orderId}: lat=${lat}, lng=${lng}`);
   });
 
   socket.on("disconnect", () => {

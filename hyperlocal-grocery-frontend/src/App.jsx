@@ -8,11 +8,15 @@ import Login from "./pages/Login";
 import Stores from "./pages/Stores";
 import Products from "./pages/Products";
 import CategoryPage from "./pages/CategoryPage";
+import ProductDetails from "./pages/ProductDetails";
+import AddressManagement from "./pages/AddressManagement";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Tracking from "./pages/Tracking";
 import OrderHistory from "./pages/OrderHistory";
 import Profile from "./pages/Profile";
+import OrderSuccess from "./pages/OrderSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
 
 // Admin
 import AdminStores from "./pages/AdminStores";
@@ -40,8 +44,12 @@ function App() {
         <Route path="/stores" element={<Stores />} />
         <Route path="/store/:storeId" element={<Products />} />
         <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/product/:productId" element={<ProductDetails />} />
+        <Route path="/addresses" element={<AddressManagement />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success/:orderId" element={<OrderSuccess />} />
+        <Route path="/payment-failed" element={<PaymentFailed />} />
         <Route path="/tracking/:orderId" element={<Tracking />} />
         <Route path="/orders" element={<OrderHistory />} />
         <Route path="/profile" element={<Profile />} />
