@@ -1,4 +1,4 @@
-const DEFAULT_API_ORIGIN = "http://localhost:5000";
+const DEFAULT_API_ORIGIN = "https://hyperlocal-grocery-platform.onrender.com";
 
 const trimTrailingSlash = (value) => value.replace(/\/+$/, "");
 
